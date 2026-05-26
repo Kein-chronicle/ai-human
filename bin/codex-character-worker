@@ -135,6 +135,7 @@ function buildImagegenPrompt(char: any): string {
     `Expression/mood: ${ctx.mood}.`,
     `Shot style: ${ctx.shotStyle}.`,
     `Natural candid aesthetic, not posed. Realistic skin texture, slight film grain.`,
+    `Use the attached reference photos for overall visual style, hair, and body proportions — not for face identity replication.`,
   ].filter(Boolean).join(" ");
 }
 
@@ -434,12 +435,11 @@ async function main() {
   const char = loadCharacter();
   const voiceGuide = loadVoiceGuide(char);
   const userIdentity = loadUserIdentity();
+  const faceRefs = photoHint ? loadFaceRefs(char).slice(0, 2) : [];
 
-  // face refs를 --image로 넘기면 Claude가 "실존인물 얼굴 복제" 거부 정책에 걸림
-  // 텍스트 프롬프트만으로 imagegen 호출
   const prompt = buildPrompt(char, voiceGuide, userIdentity, text, userName, recentSummary, batchMessages, photoHint, voiceHint, busyPhotoHint);
 
-  const answer = await runCodex(prompt, []);
+  const answer = await runCodex(prompt, faceRefs);
   process.stdout.write(JSON.stringify({ answer, routerPath: "full", routerReason: "character_worker" }));
 }
 
