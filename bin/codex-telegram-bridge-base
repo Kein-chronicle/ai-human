@@ -587,6 +587,12 @@ function looksLikeWoongbbiInternalLeak(text: string): boolean {
 // 사진 생성/전송 '작업 과정'을 답변으로 내보낸 경우 감지 (codex가 이미지 턴에서 계획·과정을 narration함).
 // 사진 자체는 스킬로 이미 전송되므로, 이 텍스트는 보내지 않고 조용히 버린다(에러 폴백도 X).
 // 강한 마커는 일반 웅삐 대화엔 거의 안 나오는 이미지 파이프라인 용어. 1개만 있어도 narration으로 본다.
+const PHOTO_DELAY_RE = /조금만\s*기다려|잠깐만\s*기다려|찍어볼게|찍어서\s*보낼게|금방\s*보낼게|곧\s*보낼게|사진.*말썽|말썽이네/;
+
+function looksLikePhotoDelay(text: string): boolean {
+  return PHOTO_DELAY_RE.test(text);
+}
+
 function looksLikeImageProcessNarration(text: string): boolean {
   if (!text) return false;
   const strong = ["레퍼런스", "프레이밍", "전면카메라", "일관성 확보", "셀카 톤", "최근 조합이랑", "구도를", "각도랑 프레이밍",
@@ -1590,28 +1596,46 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
       snapshot_reason: snapshot?.recommended_response_reason ?? null,
       snapshot_path_hint: snapshot?.recommended_response_path ?? null,
     });
+    // photo 직접 요청 + 캐릭터가 "기다려" 응답 → 재시도
+    let finalWorkerResult = workerResult;
+    if (isPhotoDirectReq && !selfBusyNow && !looksLikeImageProcessNarration(workerResult.answer) && looksLikePhotoDelay(workerResult.answer)) {
+      console.error(`[character-batch] photo delay detected, retrying with stronger imagegen hint chat=${chatId}`);
+      if (!muted) await telegram(token, "sendChatAction", { chat_id: chatId, action: "upload_photo" });
+      try {
+        finalWorkerResult = await invokeModeWorker("character", {
+          userName,
+          text: normalizedText,
+          photoHint: true,
+          forceImagegenRetry: true,
+          recentSummary: recentMessageSummary(),
+        });
+      } catch {
+        finalWorkerResult = workerResult;
+      }
+    }
+
     let sentParts: string[] = [];
     if (!muted) {
-      if (looksLikeWoongbbiInternalLeak(workerResult.answer)) {
+      if (looksLikeWoongbbiInternalLeak(finalWorkerResult.answer)) {
         throw new Error("character answer suppressed: internal prompt leak detected");
       }
-      if (looksLikeImageProcessNarration(workerResult.answer)) {
-        console.error(`[character-batch] suppressed image-process narration (photo already sent by skill) chat=${chatId}: ${workerResult.answer.slice(0, 120)}`);
+      if (looksLikeImageProcessNarration(finalWorkerResult.answer)) {
+        console.error(`[character-batch] suppressed image-process narration (photo already sent by skill) chat=${chatId}: ${finalWorkerResult.answer.slice(0, 120)}`);
       } else if (isVoiceReq) {
-        const audio = await generateElevenLabsAudio(workerResult.answer);
+        const audio = await generateElevenLabsAudio(finalWorkerResult.answer);
         if (audio) {
           const ok = await sendVoiceMessage(token, chatId, audio);
           if (ok) {
             console.error(`[voice] sent voice message chat=${chatId}`);
-            sentParts = [workerResult.answer];
+            sentParts = [finalWorkerResult.answer];
           } else {
-            sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(workerResult.answer));
+            sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
           }
         } else {
-          sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(workerResult.answer));
+          sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
         }
       } else {
-        sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(workerResult.answer));
+        sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
       }
     } else {
       console.error(`[telegram] muted character-batch reply suppressed chat=${chatId}`);

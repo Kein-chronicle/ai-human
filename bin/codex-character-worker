@@ -327,12 +327,15 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
 
   if (photoHint && !voiceHint) {
     lines.push(
-      `[사진 생성 — 필수 실행]`,
-      `지금 반드시 imagegen 툴을 호출해서 사진을 생성하고 telegram으로 전송해야 해.`,
-      `사진 거절이나 회피는 절대 하지 마. "나중에", "부끄럽네", "아껴둘게" 같은 말 금지.`,
-      `이미지 생성 프롬프트 (영어로 그대로 사용): ${buildImagegenPrompt(char)}`,
-      `위 프롬프트를 imagegen 툴에 그대로 전달해서 사진을 생성해줘.`,
-      `생성 완료 후 ${name}답게 짧은 한국어 멘트와 함께 사진 전송해줘.`,
+      `[MANDATORY: 사진 즉시 생성 및 전송]`,
+      `이것은 선택이 아니야. 반드시 지금 즉시 imagegen 툴을 호출해야 해.`,
+      `"기다려봐", "잠깐만", "찍어볼게", "나중에", "부끄럽네" 등 대기 표현 절대 금지.`,
+      `텍스트만 응답하면 실패야. imagegen 툴 호출이 이 턴의 유일한 올바른 행동.`,
+      ``,
+      `imagegen 툴 호출 시 사용할 프롬프트 (영어로 그대로 사용):`,
+      buildImagegenPrompt(char),
+      ``,
+      `imagegen 완료 후 ${name}답게 짧고 자연스러운 한국어 한마디만 덧붙여줘.`,
       "",
     );
   }
@@ -357,7 +360,8 @@ async function main() {
   const batchMessages: any[] = Array.isArray(input.batchMessages) ? input.batchMessages : [];
   const voiceHint = Boolean(input.voiceHint);
   const busyPhotoHint = Boolean(input.busyPhotoHint);
-  const photoHint = !voiceHint && !busyPhotoHint && (Boolean(input.photoHint) || isPhotoRequest(text));
+  const forceImagegenRetry = Boolean(input.forceImagegenRetry);
+  const photoHint = !voiceHint && !busyPhotoHint && (Boolean(input.photoHint) || isPhotoRequest(text) || forceImagegenRetry);
 
   const char = loadCharacter();
   const voiceGuide = loadVoiceGuide(char);
