@@ -587,7 +587,7 @@ function looksLikeWoongbbiInternalLeak(text: string): boolean {
 // 사진 생성/전송 '작업 과정'을 답변으로 내보낸 경우 감지 (codex가 이미지 턴에서 계획·과정을 narration함).
 // 사진 자체는 스킬로 이미 전송되므로, 이 텍스트는 보내지 않고 조용히 버린다(에러 폴백도 X).
 // 강한 마커는 일반 웅삐 대화엔 거의 안 나오는 이미지 파이프라인 용어. 1개만 있어도 narration으로 본다.
-const PHOTO_DELAY_RE = /조금만\s*기다려|잠깐만\s*기다려|찍어볼게|찍어서\s*보낼게|금방\s*보낼게|곧\s*보낼게|사진.*말썽|말썽이네/;
+const PHOTO_DELAY_RE = /조금만\s*기다려|잠깐만\s*기다려|찍어볼게|찍어서.*보낼게|금방\s*보낼게|곧\s*보낼게|사진.*말썽|말썽이네|새로\s*찍어|다시\s*찍어|제대로\s*찍어/;
 
 function looksLikePhotoDelay(text: string): boolean {
   return PHOTO_DELAY_RE.test(text);
