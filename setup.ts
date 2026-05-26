@@ -4,8 +4,9 @@
 // Usage: bun setup.ts
 // =============================================================================
 
-import { existsSync, mkdirSync, writeFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, writeFileSync, readdirSync, chmodSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { homedir } from "node:os";
 import { spawnSync } from "node:child_process";
 
 const ROOT = import.meta.dir;
@@ -331,6 +332,96 @@ async function main() {
     printYellow("  → Edit this file to define speech patterns (optional but recommended)");
   }
 
+  // launchd plist
+  const plistLabel = `com.ai-human.${callName.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
+  const plistName = `${plistLabel}.plist`;
+  const launchAgentsDir = join(homedir(), "Library", "LaunchAgents");
+  const plistPath = join(launchAgentsDir, plistName);
+  const bridgeBin = resolve(ROOT, "bin", "codex-telegram-bridge-base");
+  const bunBin = spawnSync("which", ["bun"], { encoding: "utf8" }).stdout?.trim() || "/opt/homebrew/bin/bun";
+  const plistXml = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>${plistLabel}</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${bunBin}</string>
+    <string>run</string>
+    <string>${bridgeBin}</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>AI_HUMAN_ROOT</key>
+    <string>${ROOT}</string>
+    <key>CHARACTER_CONFIG</key>
+    <string>${join(ROOT, "character.json")}</string>
+    <key>AI_HUMAN_STATE_DIR</key>
+    <string>${join(ROOT, "session")}</string>
+    <key>AI_HUMAN_CWD</key>
+    <string>${ROOT}</string>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>WorkingDirectory</key>
+  <string>${ROOT}</string>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>StandardOutPath</key>
+  <string>${join(ROOT, "session", "bridge.stdout.log")}</string>
+  <key>StandardErrorPath</key>
+  <string>${join(ROOT, "session", "bridge.stderr.log")}</string>
+</dict>
+</plist>
+`;
+  mkdirSync(launchAgentsDir, { recursive: true });
+  writeFileSync(plistPath, plistXml);
+  printGreen(`launchd plist: ${plistPath}`);
+
+  // botctl script
+  const botctlPath = join(ROOT, "botctl");
+  const botctlScript = `#!/usr/bin/env bash
+# botctl — manage ${name} (${callName}) AI human process
+LABEL="${plistLabel}"
+PLIST="${plistPath}"
+
+case "\$1" in
+  start)
+    launchctl load "\$PLIST" && echo "Started \$LABEL"
+    ;;
+  stop)
+    launchctl unload "\$PLIST" && echo "Stopped \$LABEL"
+    ;;
+  restart)
+    launchctl unload "\$PLIST" 2>/dev/null; sleep 1
+    launchctl load "\$PLIST" && echo "Restarted \$LABEL"
+    ;;
+  status)
+    result=$(launchctl list | grep "\$LABEL")
+    if [ -n "\$result" ]; then
+      echo "RUNNING: \$result"
+    else
+      echo "STOPPED: \$LABEL not loaded"
+    fi
+    ;;
+  logs)
+    tail -f "${join(ROOT, "session", "bridge.stderr.log")}"
+    ;;
+  *)
+    echo "Usage: botctl {start|stop|restart|status|logs}"
+    exit 1
+    ;;
+esac
+`;
+  writeFileSync(botctlPath, botctlScript);
+  chmodSync(botctlPath, 0o755);
+  printGreen("botctl script created");
+
   // ── VALIDATION ───────────────────────────────────────────────────────────
 
   print("");
@@ -355,13 +446,20 @@ async function main() {
   printBold("═══════════════════════════════════════");
   print("");
   print("Next steps:");
-  print(`  1. ${DIM}(optional)${RESET} Edit voice guide: characters/${callName}/profile/voice_guide.md`);
+  let step = 1;
+  print(`  ${step++}. ${DIM}(optional)${RESET} Edit voice guide: characters/${callName}/profile/voice_guide.md`);
   if (refCount < 3) {
-    print(`  2. Add face reference photos: ${refDir}`);
+    print(`  ${step++}. Add face reference photos: ${refDir}`);
   }
   print("");
-  print("Start your AI human:");
-  printBold("  bun bin/codex-telegram-bridge");
+  print("Start / stop:");
+  printBold(`  ./botctl start    # load & run`);
+  printBold(`  ./botctl stop     # stop`);
+  printBold(`  ./botctl status   # check running`);
+  printBold(`  ./botctl logs     # tail stderr log`);
+  print("");
+  print("Monitor all instances:");
+  printDim("  launchctl list | grep com.ai-human");
   print("");
 }
 

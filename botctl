@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# botctl — manage  () AI human process
+LABEL="com.ai-human."
+PLIST="/Users/kein/Library/LaunchAgents/com.ai-human..plist"
+
+case "$1" in
+  start)
+    launchctl load "$PLIST" && echo "Started $LABEL"
+    ;;
+  stop)
+    launchctl unload "$PLIST" && echo "Stopped $LABEL"
+    ;;
+  restart)
+    launchctl unload "$PLIST" 2>/dev/null; sleep 1
+    launchctl load "$PLIST" && echo "Restarted $LABEL"
+    ;;
+  status)
+    result=$(launchctl list | grep "$LABEL")
+    if [ -n "$result" ]; then
+      echo "RUNNING: $result"
+    else
+      echo "STOPPED: $LABEL not loaded"
+    fi
+    ;;
+  logs)
+    tail -f "/Users/kein/Projects/ai-human-maker/session/bridge.stderr.log"
+    ;;
+  *)
+    echo "Usage: botctl {start|stop|restart|status|logs}"
+    exit 1
+    ;;
+esac
