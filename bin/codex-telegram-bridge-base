@@ -1144,19 +1144,24 @@ const PHOTO_PROMISE_PATTERNS = [
   /인증샷\s*(보낼게|보내줄게)/,
 ];
 
+const URGENT_PHOTO_CONTEXT_RE = /지금|바로|금방|곧|당장/;
+
 function detectAndSavePhotoPromise(sentTexts: string[]): void {
   const combined = sentTexts.join(" ");
   for (const pat of PHOTO_PROMISE_PATTERNS) {
     const m = combined.match(pat);
     if (m) {
-      const delayMin = 5 + Math.floor(Math.random() * 16);
+      const urgent = URGENT_PHOTO_CONTEXT_RE.test(combined);
+      const delayMin = urgent
+        ? 1 + Math.floor(Math.random() * 3)   // 1~3분: "지금/바로" 류
+        : 8 + Math.floor(Math.random() * 8);   // 8~15분: 일반 약속
       const sendAfter = new Date(Date.now() + delayMin * 60 * 1000).toISOString();
       writeFileSync(
         pendingPhotoPromiseFile,
         JSON.stringify({ created_at: nowIso(), send_after: sendAfter, trigger_text: m[0], delay_minutes: delayMin, status: "pending" }, null, 2) + "\n",
         { mode: 0o600 },
       );
-      console.error(`[photo-promise] scheduled in ${delayMin}min: "${m[0]}"`);
+      console.error(`[photo-promise] scheduled in ${delayMin}min (${urgent ? "urgent" : "normal"}): "${m[0]}"`);
       return;
     }
   }
