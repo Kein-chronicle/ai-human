@@ -104,6 +104,54 @@ function readSchedule(): any {
   catch { return null; }
 }
 
+function toMinutes(hhmm: string): number {
+  const [h, m] = (hhmm ?? "").split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+function maybeUpdateSelfBusyState(): void {
+  try {
+    const sched = readSchedule();
+    if (!sched) return;
+    const cur = nowKstMinutes();
+
+    let blockType = "free";
+    let blockLabel = "자유 시간";
+    let until: string | null = null;
+
+    if (sched.day_type === "weekday") {
+      const departMin = toMinutes(sched.morning?.depart_time ?? "");
+      const arriveWorkMin = toMinutes(sched.commute_to_work?.arrive_time ?? sched.morning?.arrive_time ?? "09:00");
+      const workEndMin = toMinutes(sched.commute_home?.depart_time ?? "18:00");
+      const arriveHomeMin = toMinutes(sched.commute_home?.arrive_time ?? "19:30");
+
+      if (departMin > 0 && cur >= departMin && cur < arriveWorkMin) {
+        blockType = "commute"; blockLabel = "출근 중"; until = sched.commute_to_work?.arrive_time ?? "09:00";
+      } else if (cur >= arriveWorkMin && cur < workEndMin) {
+        blockType = "work"; blockLabel = "업무 중"; until = sched.commute_home?.depart_time ?? "18:00";
+      } else if (cur >= workEndMin && cur < arriveHomeMin) {
+        blockType = "commute"; blockLabel = "퇴근 중"; until = sched.commute_home?.arrive_time ?? "19:30";
+      }
+
+      const exerciseStart = toMinutes(sched.evening?.start ?? "");
+      const exerciseEnd = toMinutes(sched.evening?.end ?? "");
+      if (exerciseStart > 0 && cur >= exerciseStart && cur < exerciseEnd) {
+        blockType = "exercise"; blockLabel = "운동 중"; until = sched.evening?.end ?? null;
+      }
+    }
+
+    writeFileSync(
+      selfBusyStateFile,
+      JSON.stringify({
+        current_block: { type: blockType, label: blockLabel, until, started_at: new Date().toISOString() },
+        updated_at: new Date().toISOString(),
+        updated_by: "proactive_sender",
+      }, null, 2) + "\n",
+      { mode: 0o600 },
+    );
+  } catch {}
+}
+
 function maybeGenerateSchedule(): void {
   const schedPath = join(cwd, "state", "daily_schedule_state.json");
   const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
@@ -289,6 +337,7 @@ function checkAndWritePhotoTrigger(): void {
 
 async function main() {
   maybeGenerateSchedule();
+  maybeUpdateSelfBusyState();
 
   if (existsSync(muteFlagFile)) { console.error("[proactive] muted, skip"); return; }
   if (isInQuietHours()) { console.error("[proactive] quiet hours, skip"); return; }
