@@ -20,6 +20,8 @@ const codexBin = process.env.CODEX_BIN ?? "codex";
 const model = process.env.CODEX_TELEGRAM_MODEL;
 const promptPrefix = process.env.CODEX_TELEGRAM_PROMPT_PREFIX ?? "";
 const modeStateFile = join(cwd, "state", "mode_state.json");
+const selfBusyStateFile = join(cwd, "state", "self_busy_state.json");
+const pendingIncomingFile = join(cwd, "state", "pending_incoming_messages.jsonl");
 const relationshipNormalizerStateFile = join(cwd, "state", "relationship_safety_normalizer_state.json");
 const settingModeAutopushScript = join(cwd, "tools", "setting_mode_autopush.py");
 const chatRuntimeSnapshotFile = join(cwd, "state", "chat_runtime_snapshot.json");
@@ -1001,6 +1003,83 @@ function appendJsonl(path: string, payload: any): void {
   appendFileSync(path, `${JSON.stringify(payload)}\n`, { encoding: "utf8", mode: 0o600 });
 }
 
+// =============================================================================
+// SELF BUSY BLOCK (캐릭터 자체 비지 블록)
+// 캐릭터가 수영/근무/수면 중일 때 선톡 억제 + 상대방 톡 큐잉
+// =============================================================================
+
+function readSelfBusyState(): any {
+  return readJsonFile(selfBusyStateFile) ?? { current_block: null };
+}
+
+function nowKstMinutes(): number {
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  return kst.getUTCHours() * 60 + kst.getUTCMinutes();
+}
+
+function hhmToMinutes(hhmm: string): number {
+  const [h, m] = (hhmm || "").split(":").map(Number);
+  if (!Number.isFinite(h)) return -1;
+  return h * 60 + (m || 0);
+}
+
+function isCharacterBusy(state: any): boolean {
+  const block = state?.current_block;
+  if (!block || block.type === "free") return false;
+  if (!block.until) return true;
+  const untilMin = hhmToMinutes(block.until);
+  if (untilMin < 0) return false;
+  return nowKstMinutes() < untilMin;
+}
+
+function saveSelfBusyState(data: any): void {
+  saveJsonFile(selfBusyStateFile, { ...data, updated_at: new Date().toISOString() });
+}
+
+function appendPendingIncoming(entry: { timestamp: string; text: string; userName: string; messageId: number }): void {
+  appendFileSync(pendingIncomingFile, `${JSON.stringify(entry)}\n`, { encoding: "utf8", mode: 0o600 });
+}
+
+function flushPendingIncoming(): Array<{ timestamp: string; text: string; userName: string }> {
+  try {
+    if (!existsSync(pendingIncomingFile)) return [];
+    const lines = readFileSync(pendingIncomingFile, "utf8").split("\n").filter(Boolean);
+    if (lines.length === 0) return [];
+    unlinkSync(pendingIncomingFile);
+    return lines.map((l) => JSON.parse(l));
+  } catch {
+    return [];
+  }
+}
+
+// 캐릭터 발신 텍스트에서 self-busy 진입 키워드 감지 → 상태 자동 세팅
+const SWIM_TRIGGERS = ["수영 갈게", "수영할게", "수영 해야", "수영하러", "물 들어가", "레인 들어가", "풀장 가", "수영 시작"];
+const EXERCISE_TRIGGERS = ["헬스 갈게", "헬스할게", "운동 갈게", "러닝 갈게", "필라테스 갈게", "요가 갈게", "운동하러"];
+
+function detectAndSetSelfBusy(sentTexts: string[]): void {
+  const combined = sentTexts.join(" ");
+  const isSwim = SWIM_TRIGGERS.some((kw) => combined.includes(kw));
+  const isExercise = !isSwim && EXERCISE_TRIGGERS.some((kw) => combined.includes(kw));
+  if (!isSwim && !isExercise) return;
+
+  const type = isSwim ? "swim" : "exercise";
+  const label = isSwim ? "수영" : "운동";
+
+  let until: string | null = null;
+  const timeMatch = combined.match(/(\d{1,2})시\s*(?:에|까지|쯤)?\s*(?:끝날|끝나|나올|올게|돌아올)/);
+  if (timeMatch) {
+    const hour = Number.parseInt(timeMatch[1], 10);
+    until = `${String(hour).padStart(2, "0")}:00`;
+  }
+
+  const state = readSelfBusyState();
+  if (state.current_block && state.current_block.type && state.current_block.type !== "free") return;
+
+  state.current_block = { type, label, until, started_at: new Date().toISOString() };
+  saveSelfBusyState(state);
+  console.error(`[self-busy] outgoing detected: type=${type} until=${until ?? "indefinite"}`);
+}
+
 function appendMessageLog(payload: any): void {
   const { date } = seoulDateParts();
   appendJsonl(join(messagesDir, `${date}.jsonl`), payload);
@@ -1510,6 +1589,30 @@ async function processMessage(token: string, message: any) {
     return;
   }
 
+  // ── SELF BUSY BLOCK HANDLING (woongbbi mode only) ───────────────────────────
+  if (targetMode === "woongbbi") {
+    const selfBusy = readSelfBusyState();
+    if (isCharacterBusy(selfBusy)) {
+      appendPendingIncoming({ timestamp: nowIso(), text: effectiveText, userName, messageId });
+      appendResponseDecisionLog({
+        decision_type: "self_busy_queue",
+        block_type: selfBusy.current_block?.type,
+        block_label: selfBusy.current_block?.label,
+        block_until: selfBusy.current_block?.until,
+        text_preview: effectiveText.slice(0, 60),
+        status: "queued",
+      });
+      return;
+    }
+    if (selfBusy.current_block) {
+      selfBusy.current_block = null;
+      selfBusy.updated_by = "auto_expired_bridge";
+      saveSelfBusyState(selfBusy);
+    }
+  }
+
+  const pendingMessages = targetMode === "woongbbi" ? flushPendingIncoming() : [];
+
   try {
     if (!muted) await telegram(token, "sendChatAction", { chat_id: chatId, action: "typing" });
     const workerPayload =
@@ -1520,6 +1623,7 @@ async function processMessage(token: string, message: any) {
             snapshot,
             recentSummary: recentMessageSummary(),
             incomingImages,
+            ...(pendingMessages.length > 0 ? { batchMessages: pendingMessages } : {}),
           }
         : {
             userName,
@@ -1562,6 +1666,7 @@ async function processMessage(token: string, message: any) {
           console.error(`[telegram] suppressed image-process narration (photo already sent by skill) chat=${chatId}: ${answer.slice(0, 120)}`);
         } else {
           sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(answer));
+          if (sentParts.length > 0) detectAndSetSelfBusy(sentParts);
         }
       } else {
         sentParts = await sendText(token, chatId, answer, { split: false });
