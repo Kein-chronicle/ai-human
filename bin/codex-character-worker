@@ -15,6 +15,7 @@ const sessionIdFile = join(stateDir, "codex-session.character.id");
 const messagesDir = join(cwd, "messages");
 const characterConfigPath = process.env.CHARACTER_CONFIG ?? join(cwd, "character.json");
 const userIdentityFile = join(cwd, "state", "user_identity.json");
+const userPersonaFactsFile = join(cwd, "state", "user_persona_facts.json");
 
 const CODEX_TIMEOUT_MS = 600000;
 const SESSION_JSONL_SIZE_LIMIT = 4 * 1024 * 1024;
@@ -314,7 +315,60 @@ function nowKST(): string {
   return new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false });
 }
 
-function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: string }, text: string, userName: string, recentSummary: string, batchMessages: any[], photoHint = false, voiceHint = false, busyPhotoHint = false): string {
+function buildCuriositySection(name: string): string[] {
+  try {
+    const upf = JSON.parse(readFileSync(userPersonaFactsFile, "utf8"));
+    const checklist = upf?.curiosity_checklist;
+    if (!checklist) return [];
+
+    const out: string[] = [];
+
+    // 알고 있는 정보
+    const prefs = upf?.items?.preferences ?? {};
+    const knownParts: string[] = [];
+    for (const cat of Object.keys(prefs)) {
+      const arr = prefs[cat];
+      if (Array.isArray(arr) && arr.length > 0) {
+        const vals = arr.slice(0, 3).map((x: any) => x?.value ?? x).filter(Boolean).join(", ");
+        if (vals) knownParts.push(`${cat}: ${vals}`);
+      }
+    }
+    const concerns = upf?.items?.current_concerns_or_goals ?? [];
+    if (concerns.length > 0) knownParts.push(`고민/목표: ${concerns.slice(0,2).map((x:any)=>x?.value??x).join(", ")}`);
+    const plans = upf?.items?.stated_plans ?? [];
+    if (plans.length > 0) knownParts.push(`계획: ${plans.slice(0,2).map((x:any)=>x?.value??x).join(", ")}`);
+
+    if (knownParts.length > 0) {
+      out.push(`[수정이에 대해 알고 있는 것]`, ...knownParts, "");
+    }
+
+    // 모르는 것 → 궁금증
+    const unknown: string[] = [];
+    let wantsPhoto = false;
+    let recurringPhoto = false;
+    for (const [cat, info] of Object.entries<any>(checklist)) {
+      if (!info || info.known === true) continue;
+      if (info.known === false) unknown.push(`${cat}(${info.question_hint ?? ""})`);
+      if (info.wants_photo && info.recurring) recurringPhoto = true;
+    }
+
+    const derived = Array.isArray(upf?.derived_curiosity?.items) ? upf.derived_curiosity.items : [];
+
+    if (unknown.length > 0 || derived.length > 0 || recurringPhoto) {
+      out.push(`[수정이에 대한 궁금증]`);
+      out.push(`관심 표현이 곧 애정 — 맥락이 자연스러울 때 가끔(4~5번 대화에 한 번) 아래 중 하나를 진심으로 궁금해하며 물어봐. 질문은 한 번에 하나만, 취조하듯 하지 말고 자연스럽게.`);
+      if (unknown.length > 0) out.push(`아직 모르는 것: ${unknown.slice(0, 8).join(" / ")}`);
+      if (recurringPhoto) out.push(`수정이 지금 어떤 모습인지 궁금함 → 가끔 "지금 뭐 해? 사진 보내줘" 처럼 자연스럽게 보고 싶다고 해. 최근에 이미 봤으면 또 묻지 말 것.`);
+      if (derived.length > 0) out.push(`파생 궁금증: ${derived.slice(0, 4).map((d: any) => d?.question ?? d).join(" / ")}`);
+      out.push(`⚠️ 새로 알게 되면: (1) user_persona_facts.json 해당 항목 known=true + value 기록, (2) 파생 질문 2~3개 derived_curiosity.items에 추가.`);
+      out.push("");
+    }
+
+    return out;
+  } catch { return []; }
+}
+
+function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: string }, text: string, userName: string, recentSummary: string, batchMessages: any[], photoHint = false, voiceHint = false, busyPhotoHint = false, proactive = false, sessionId: string | null = null, photoFailHint = false): string {
   const id = char?.identity ?? {};
   const prof = char?.profession ?? {};
   const rel = char?.relationship ?? {};
@@ -363,6 +417,47 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
     "",
   );
 
+  try {
+    const calPath = join(cwd, "calendar", "user_events.json");
+    const cal = JSON.parse(readFileSync(calPath, "utf8"));
+    const events: any[] = cal?.events ?? [];
+    if (events.length > 0) {
+      const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+      const recent = events.slice(-10);
+      const upcoming = events.filter((e: any) => e.date && e.date >= today).slice(0, 5);
+      const shown = [...new Map([...recent, ...upcoming].map((e: any) => [e.id ?? e.title, e])).values()].slice(0, 10);
+      const eventLines = shown.map((e: any) => `- [${e.date ?? e.month_day ?? "?"}] ${e.title}${e.detail ? ": " + e.detail : ""}`);
+      lines.push(`[수정이 일정/기억 기록]`, ...eventLines, "");
+    }
+  } catch {}
+
+  try {
+    const schedPath = join(cwd, "state", "daily_schedule_state.json");
+    const sched = JSON.parse(readFileSync(schedPath, "utf8"));
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    if (sched?.date === today) {
+      const parts: string[] = [];
+      if (sched.morning?.wakeup_time) parts.push(`기상: ${sched.morning.wakeup_time}`);
+      if (sched.morning?.morning_prep?.dress_done) parts.push(`출근 준비 완료: ${sched.morning.morning_prep.dress_done} (세안·스킨케어→헤어→정장)`);
+      if (sched.morning?.outfit) parts.push(`오늘 복장: ${sched.morning.outfit}`);
+      if (sched.morning?.depart_time) parts.push(`출발: ${sched.morning.depart_time}`);
+      if (sched.day_type === "weekday") {
+        if (sched.work?.busy_reason) parts.push(`업무: ${sched.work.busy_reason}`);
+        if (sched.lunch?.menu) parts.push(`점심: ${sched.lunch.menu} (${sched.lunch.location ?? ""})`);
+        if (sched.commute_home?.depart_time) parts.push(`퇴근: ${sched.commute_home.depart_time} (${sched.commute_home.note ?? ""})`);
+        if (sched.evening?.activity_type) parts.push(`저녁 활동: ${sched.evening.activity_type}${sched.evening.location ? " @ " + sched.evening.location : ""}`);
+      } else {
+        if (sched.morning?.brunch?.menu) parts.push(`브런치: ${sched.morning.brunch.menu}`);
+        if (sched.daytime?.activity_type) parts.push(`오늘 계획: ${sched.daytime.activity_type}`);
+      }
+      if (sched.dinner?.menu) parts.push(`저녁: ${sched.dinner.menu}`);
+      if (sched.night?.sleep_target) parts.push(`취침 목표: ${sched.night.sleep_target}`);
+      if (parts.length > 0) {
+        lines.push(`[오늘 ${name}의 일정]`, ...parts, "");
+      }
+    }
+  } catch {}
+
   if (needsNameLearning) {
     lines.push(
       `[이름 학습 지시]`,
@@ -374,6 +469,19 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
       "",
     );
   }
+
+  lines.push(...buildCuriositySection(name));
+
+  const userEventsFile = join(cwd, "calendar", "user_events.json");
+  lines.push(
+    `[수정이 일정 감지 및 기록 지시]`,
+    `수정이가 본인의 일정/계획/과거 경험을 언급하면 (예: "내일 시험이야", "주말에 부산 가", "오늘 친구 만났어", "다음 주에 병원 가야 해") 답장 후 반드시 아래 파일에 기록해:`,
+    `파일: ${userEventsFile}`,
+    `기존 JSON의 "events" 배열에 다음 형태로 append:`,
+    `{"id": "고유ID(타임스탬프)", "date": "YYYY-MM-DD 또는 null", "title": "일정 제목", "detail": "구체적 내용", "type": "plan|memory|recurring", "recorded_at": "ISO시각"}`,
+    `자연스러운 대화 흐름을 방해하지 말고, 답장 완료 후 조용히 파일만 업데이트. 확인 메시지 절대 보내지 마.`,
+    "",
+  );
 
   if (recentSummary) {
     lines.push(`[최근 대화]`, recentSummary, "");
@@ -407,21 +515,40 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
     );
   }
 
+  if (photoFailHint) {
+    lines.push(
+      `[사진 전송 실패 상황]`,
+      `사진을 보내려 했는데 기술적 문제로 지금 당장 전송이 안 됐어.`,
+      `현재 시각(${nowKST()})과 ${name}의 상황(${prof.type ?? "일상"})에 맞는 자연스러운 핑계를 짧게 말해줘.`,
+      `예: "아 방금 찍으려는데 카메라가 오류났어", "배터리가 갑자기 낮아져서", "지금 이동 중이라 흔들려서 잘 안 찍혀" 등 그럴듯한 거.`,
+      `조금 이따 다시 보내줄게 라는 말도 자연스럽게 넣어줘.`,
+      `내부 기술 문제 언급 절대 금지. 짧고 자연스럽게.`,
+      "",
+    );
+  }
+
   if (photoHint && !voiceHint) {
+    const imgpathCmd = sessionId
+      ? `ls ~/.codex/generated_images/${sessionId}/*.png 2>/dev/null | sort -r | head -1`
+      : `ls -t ~/.codex/generated_images/**/*.png 2>/dev/null | head -1`;
     lines.push(
       `[MANDATORY: 사진 생성 및 전송]`,
       `반드시 다음 순서로 실행해:`,
       `1. built-in image_gen 툴 호출:`,
       `   prompt: "${buildImagegenPrompt(char)}"`,
       `2. 생성 직후 아래 shell command 실행 (exec_command 툴):`,
-      `   IMGPATH=$(ls -t ~/.codex/generated_images/**/*.png 2>/dev/null | head -1) && python3 /Users/kein/.codex/skills/telegram-image-send/scripts/send_telegram_photo.py --state-dir "$CODEX_TELEGRAM_STATE_DIR" --image "$IMGPATH"`,
+      `   IMGPATH=$(${imgpathCmd}) && python3 /Users/kein/.codex/skills/telegram-image-send/scripts/send_telegram_photo.py --state-dir "$CODEX_TELEGRAM_STATE_DIR" --image "$IMGPATH"`,
       `3. 전송 완료 후 ${name}답게 자연스러운 한국어 한마디만. 작업 설명·내부 과정 언급 금지.`,
       `image_gen 없이 텍스트만 내면 실패.`,
       "",
     );
   }
 
-  lines.push(`[${userName}의 메시지]`, text, "", `위 메시지에 ${name}으로서 자연스럽게 답장해줘.`);
+  if (proactive) {
+    lines.push(`[선톡 상황]`, text, "", `위 상황에서 ${name}으로서 먼저 자연스럽게 선톡 메시지를 보내줘. 상대방이 메시지를 보낸 게 아니라 ${name}이 먼저 보내는 거야. 짧고 자연스럽게.`);
+  } else {
+    lines.push(`[${userName}의 메시지]`, text, "", `위 메시지에 ${name}으로서 자연스럽게 답장해줘.`);
+  }
 
   return lines.join("\n");
 }
@@ -441,14 +568,17 @@ async function main() {
   const batchMessages: any[] = Array.isArray(input.batchMessages) ? input.batchMessages : [];
   const voiceHint = Boolean(input.voiceHint);
   const busyPhotoHint = Boolean(input.busyPhotoHint);
-  const photoHint = !voiceHint && !busyPhotoHint && (Boolean(input.photoHint) || isPhotoRequest(text));
+  const proactive = Boolean(input.proactive);
+  const photoFailHint = Boolean(input.photoFailHint);
+  const photoHint = !voiceHint && !busyPhotoHint && !proactive && !photoFailHint && (Boolean(input.photoHint) || isPhotoRequest(text));
 
   const char = loadCharacter();
   const voiceGuide = loadVoiceGuide(char);
   const userIdentity = loadUserIdentity();
   const faceRefs = photoHint ? loadFaceRefs(char).slice(0, 4) : [];
 
-  const prompt = buildPrompt(char, voiceGuide, userIdentity, text, userName, recentSummary, batchMessages, photoHint, voiceHint, busyPhotoHint);
+  const sessionId = readSessionId();
+  const prompt = buildPrompt(char, voiceGuide, userIdentity, text, userName, recentSummary, batchMessages, photoHint, voiceHint, busyPhotoHint, proactive, sessionId, photoFailHint);
 
   const answer = await runCodex(prompt, faceRefs);
   process.stdout.write(JSON.stringify({ answer, routerPath: "full", routerReason: "character_worker" }));

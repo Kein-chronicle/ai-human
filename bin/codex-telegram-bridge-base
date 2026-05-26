@@ -23,6 +23,8 @@ const modeStateFile = join(cwd, "state", "mode_state.json");
 const selfBusyStateFile = join(cwd, "state", "self_busy_state.json");
 const pendingIncomingFile = join(cwd, "state", "pending_incoming_messages.jsonl");
 const pendingPhotoPromiseFile = join(cwd, "state", "pending_photo_promise.json");
+const pendingArrivalPromiseFile = join(cwd, "state", "pending_arrival_promise.json");
+const pendingProactivePhotoFile = join(cwd, "state", "pending_proactive_photo.json");
 const relationshipNormalizerStateFile = join(cwd, "state", "relationship_safety_normalizer_state.json");
 const settingModeAutopushScript = join(cwd, "tools", "setting_mode_autopush.py");
 const chatRuntimeSnapshotFile = join(cwd, "state", "chat_runtime_snapshot.json");
@@ -85,6 +87,42 @@ function pickReferenceImage(): string | null {
   } catch {
     return null;
   }
+}
+
+function readCharacterSessionId(): string | null {
+  try {
+    const id = readFileSync(characterSessionIdFile, "utf8").trim();
+    return id || null;
+  } catch {
+    return null;
+  }
+}
+
+function findLatestGeneratedImage(afterMs: number, sessionId?: string | null): string | null {
+  const imagesRoot = join(homedir(), ".codex", "generated_images");
+  if (!existsSync(imagesRoot)) return null;
+  let best: { path: string; mtimeMs: number } | null = null;
+  try {
+    const sessionDirs = sessionId
+      ? [join(imagesRoot, sessionId)]
+      : readdirSync(imagesRoot).map((e) => join(imagesRoot, e));
+    for (const sessionPath of sessionDirs) {
+      try {
+        if (!statSync(sessionPath).isDirectory()) continue;
+        for (const file of readdirSync(sessionPath)) {
+          if (!/\.png$/i.test(file)) continue;
+          const filePath = join(sessionPath, file);
+          try {
+            const { mtimeMs } = statSync(filePath);
+            if (mtimeMs >= afterMs - 10000 && (!best || mtimeMs > best.mtimeMs)) {
+              best = { path: filePath, mtimeMs };
+            }
+          } catch {}
+        }
+      } catch {}
+    }
+  } catch {}
+  return best?.path ?? null;
 }
 
 async function sendPhotoMessage(token: string, chatId: string, imagePath: string, caption: string): Promise<boolean> {
@@ -1212,6 +1250,97 @@ function detectAndSavePhotoPromise(sentTexts: string[]): void {
   }
 }
 
+// follow-up promise: 응우가 "~하면/~하고 연락할게" 류 약속 했을 때 자동 이행
+const FOLLOWUP_PROMISE_PATTERNS: { re: RegExp; delayMin: () => number; ctx: string }[] = [
+  // 도착 알림
+  { re: /도착하면\s*(알려줄게|연락할게|말해줄게|문자할게|톡할게|바로\s*말해줄게)/, delayMin: () => 20 + Math.floor(Math.random() * 15), ctx: "집에 방금 도착했어. 아까 도착하면 알려준다고 했으니까 자연스럽게 짧게 연락해줘." },
+  { re: /집\s*(도착하면|가면|오면|들어오면)\s*(알려줄게|연락할게|말해줄게)/, delayMin: () => 20 + Math.floor(Math.random() * 15), ctx: "집에 방금 도착했어. 아까 도착하면 알려준다고 했으니까 자연스럽게 짧게 연락해줘." },
+  { re: /도착하면\s*연락/, delayMin: () => 20 + Math.floor(Math.random() * 15), ctx: "집에 방금 도착했어. 아까 도착하면 연락한다고 했으니까 자연스럽게 짧게 연락해줘." },
+  // 씻고/샤워
+  { re: /(씻고|샤워하고)\s*(올게|다녀올게|나올게|연락할게|말할게)/, delayMin: () => 12 + Math.floor(Math.random() * 8), ctx: "방금 씻고 나왔어. 아까 씻고 온다고 했으니까 자연스럽게 짧게 말 걸어줘." },
+  { re: /씻고\s*나서\s*(연락|말|얘기)/, delayMin: () => 12 + Math.floor(Math.random() * 8), ctx: "방금 씻고 나왔어. 아까 씻고 나서 연락한다고 했으니까 자연스럽게 말 걸어줘." },
+  // 다녀와서/금방 갔다옴
+  { re: /다녀와서\s*(또|다시|말|연락|얘기|볼게|할게)/, delayMin: () => 10 + Math.floor(Math.random() * 8), ctx: "아까 다녀온다고 했어. 돌아왔으니까 자연스럽게 짧게 말 걸어줘." },
+  { re: /금방\s*(다녀올게|돌아올게|갔다올게)/, delayMin: () => 8 + Math.floor(Math.random() * 7), ctx: "아까 금방 다녀온다고 했어. 돌아왔으니까 자연스럽게 짧게 말 걸어줘." },
+  { re: /잠깐\s*(나갔다올게|다녀올게|자리\s*비울게)/, delayMin: () => 8 + Math.floor(Math.random() * 7), ctx: "아까 잠깐 자리 비운다고 했어. 돌아왔으니까 자연스럽게 짧게 말 걸어줘." },
+  // 밥/식사 후
+  { re: /(밥|식사|점심|저녁|아침)\s*(먹고|하고)\s*(연락|말|얘기|다시)/, delayMin: () => 25 + Math.floor(Math.random() * 15), ctx: "밥 다 먹었어. 아까 먹고 연락한다고 했으니까 자연스럽게 짧게 말 걸어줘." },
+  { re: /먹고\s*(올게|나서\s*연락|연락할게|말할게|얘기하자)/, delayMin: () => 20 + Math.floor(Math.random() * 15), ctx: "밥 다 먹었어. 아까 먹고 온다고 했으니까 자연스럽게 짧게 말 걸어줘." },
+  // 이따/조금 있다가
+  { re: /이따(가)?\s*(연락|말\s*걸|얘기|먼저\s*연락)할게/, delayMin: () => 40 + Math.floor(Math.random() * 30), ctx: "아까 이따가 연락한다고 했어. 이제 시간 생겼으니까 자연스럽게 먼저 말 걸어줘." },
+  { re: /이따(가)?\s*먼저\s*연락/, delayMin: () => 40 + Math.floor(Math.random() * 30), ctx: "아까 이따가 먼저 연락한다고 했어. 자연스럽게 먼저 말 걸어줘." },
+  { re: /조금\s*(있다가|이따)\s*(연락|말|얘기)/, delayMin: () => 30 + Math.floor(Math.random() * 20), ctx: "아까 조금 있다가 연락한다고 했어. 이제 시간 생겼으니까 자연스럽게 말 걸어줘." },
+  // 일/회의 끝나고
+  { re: /(일|업무|회의|미팅)\s*(끝나고|끝나면|마치고)\s*(연락|말|얘기|다시)/, delayMin: () => 40 + Math.floor(Math.random() * 30), ctx: "일 끝났어. 아까 끝나고 연락한다고 했으니까 자연스럽게 짧게 말 걸어줘." },
+  // 운동/수영 끝나고
+  { re: /(운동|수영|헬스)\s*(끝나고|끝나면|하고)\s*(연락|말|얘기|다시)/, delayMin: () => 60 + Math.floor(Math.random() * 20), ctx: "운동 끝났어. 아까 끝나고 연락한다고 했으니까 자연스럽게 짧게 말 걸어줘." },
+  // 퇴근 후
+  { re: /퇴근하고\s*(연락|말|얘기|다시)/, delayMin: () => 30 + Math.floor(Math.random() * 20), ctx: "퇴근했어. 아까 퇴근하고 연락한다고 했으니까 자연스럽게 짧게 말 걸어줘." },
+  // 정리/확인 후
+  { re: /(정리|마무리)\s*(하고|끝내고)\s*(연락|말|얘기)/, delayMin: () => 20 + Math.floor(Math.random() * 15), ctx: "아까 정리하고 연락한다고 했어. 자연스럽게 짧게 말 걸어줘." },
+];
+
+function detectAndSaveArrivalPromise(sentTexts: string[]): void {
+  if (existsSync(pendingArrivalPromiseFile)) {
+    try {
+      const existing = JSON.parse(readFileSync(pendingArrivalPromiseFile, "utf8"));
+      if (existing?.status === "pending") return;
+    } catch {}
+  }
+  const combined = sentTexts.join(" ");
+  for (const { re, delayMin: getDelay, ctx } of FOLLOWUP_PROMISE_PATTERNS) {
+    const m = combined.match(re);
+    if (m) {
+      const delayMin = getDelay();
+      const sendAfter = new Date(Date.now() + delayMin * 60 * 1000).toISOString();
+      writeFileSync(
+        pendingArrivalPromiseFile,
+        JSON.stringify({ created_at: nowIso(), send_after: sendAfter, trigger_text: m[0], delay_minutes: delayMin, followup_ctx: ctx, status: "pending" }, null, 2) + "\n",
+        { mode: 0o600 },
+      );
+      console.error(`[followup-promise] scheduled in ${delayMin}min: "${m[0]}"`);
+      return;
+    }
+  }
+}
+
+async function checkPendingArrivalPromise(token: string): Promise<void> {
+  if (!existsSync(pendingArrivalPromiseFile)) return;
+  let promise: any;
+  try { promise = JSON.parse(readFileSync(pendingArrivalPromiseFile, "utf8")); } catch { return; }
+  if (promise?.status !== "pending") return;
+  if (!promise?.send_after || new Date() < new Date(promise.send_after)) return;
+
+  promise.status = "sending";
+  writeFileSync(pendingArrivalPromiseFile, JSON.stringify(promise, null, 2) + "\n", { mode: 0o600 });
+
+  const access = readAccess();
+  const chatId = (access.allowFrom ?? [])[0];
+  if (!chatId) { promise.status = "failed"; writeFileSync(pendingArrivalPromiseFile, JSON.stringify(promise, null, 2) + "\n", { mode: 0o600 }); return; }
+
+  try {
+    const ctx = promise.followup_ctx ?? "아까 연락한다고 했어. 자연스럽게 짧게 말 걸어줘.";
+    const result = await invokeModeWorker("character", {
+      proactive: true,
+      text: ctx,
+      userName: "상대방",
+    });
+    const msgs = result.answer.split("\n").map((l: string) => l.trim()).filter(Boolean).slice(0, 2);
+    for (let i = 0; i < msgs.length; i++) {
+      await sendText(token, chatId, msgs[i], { split: false });
+      if (i < msgs.length - 1) await Bun.sleep(800 + Math.random() * 1000);
+    }
+    if (msgs.length > 0) logOutgoingTextParts("system", "followup_promise", msgs);
+    promise.status = "sent";
+    promise.resolved_at = nowIso();
+    console.error(`[followup-promise] fulfilled: sent ${msgs.length} messages`);
+  } catch (err) {
+    promise.status = "failed";
+    console.error(`[followup-promise] error: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  writeFileSync(pendingArrivalPromiseFile, JSON.stringify(promise, null, 2) + "\n", { mode: 0o600 });
+}
+
 async function checkPendingPhotoPromise(token: string): Promise<void> {
   if (!existsSync(pendingPhotoPromiseFile)) return;
   let promise: any;
@@ -1236,6 +1365,7 @@ async function checkPendingPhotoPromise(token: string): Promise<void> {
   if (!chatId) { promise.status = "failed"; promise.error = "no_chat_id"; writeFileSync(pendingPhotoPromiseFile, JSON.stringify(promise, null, 2) + "\n", { mode: 0o600 }); return; }
 
   try {
+    const promiseStartMs = Date.now();
     const result = await invokeModeWorker("character", {
       proactive: true,
       photoHint: true,
@@ -1244,9 +1374,34 @@ async function checkPendingPhotoPromise(token: string): Promise<void> {
       userName: "상대방",
     });
     const answer = result.answer ?? "";
-    if (answer && !looksLikeImageProcessNarration(answer) && !repliesMuted()) {
-      const parts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(answer));
-      if (parts.length > 0) logOutgoingTextParts("system", "photo_promise", parts);
+    if (!repliesMuted()) {
+      const generatedImage = findLatestGeneratedImage(promiseStartMs, readCharacterSessionId());
+      if (generatedImage) {
+        if (answer && !looksLikeImageProcessNarration(answer)) {
+          const parts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(answer));
+          if (parts.length > 0) logOutgoingTextParts("system", "photo_promise", parts);
+        }
+      } else {
+        // image_gen 실패 — 핑계 문자 전송
+        if (looksLikePhotoDelay(answer)) {
+          const parts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(answer));
+          if (parts.length > 0) logOutgoingTextParts("system", "photo_promise_fail", parts);
+        } else {
+          try {
+            const excuseResult = await invokeModeWorker("character", { photoFailHint: true, text: trigger, userName: "상대방" });
+            if (excuseResult.answer && !looksLikeImageProcessNarration(excuseResult.answer)) {
+              const parts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(excuseResult.answer));
+              if (parts.length > 0) logOutgoingTextParts("system", "photo_promise_fail", parts);
+            }
+          } catch {
+            if (answer && !looksLikeImageProcessNarration(answer)) {
+              const parts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(answer));
+              if (parts.length > 0) logOutgoingTextParts("system", "photo_promise", parts);
+            }
+          }
+        }
+        console.error(`[photo-promise] image_gen failed, sent photo-fail excuse chat=${chatId}`);
+      }
     }
     promise.status = "sent";
   } catch (err) {
@@ -1256,6 +1411,66 @@ async function checkPendingPhotoPromise(token: string): Promise<void> {
   }
   promise.resolved_at = nowIso();
   writeFileSync(pendingPhotoPromiseFile, JSON.stringify(promise, null, 2) + "\n", { mode: 0o600 });
+}
+
+async function checkPendingProactivePhoto(token: string): Promise<void> {
+  if (!existsSync(pendingProactivePhotoFile)) return;
+  let trigger: any;
+  try { trigger = JSON.parse(readFileSync(pendingProactivePhotoFile, "utf8")); } catch { return; }
+  if (trigger?.status !== "pending") return;
+  if (repliesMuted()) return;
+
+  // 대화 중이면 최대 30분 대기 후 포기
+  const ageMs = Date.now() - new Date(trigger.created_at).getTime();
+  if (ageMs > 30 * 60 * 1000) {
+    trigger.status = "expired";
+    writeFileSync(pendingProactivePhotoFile, JSON.stringify(trigger, null, 2) + "\n", { mode: 0o600 });
+    return;
+  }
+
+  trigger.status = "sending";
+  writeFileSync(pendingProactivePhotoFile, JSON.stringify(trigger, null, 2) + "\n", { mode: 0o600 });
+
+  const access = readAccess();
+  const chatId = (access.allowFrom ?? [])[0];
+  if (!chatId) { trigger.status = "failed"; writeFileSync(pendingProactivePhotoFile, JSON.stringify(trigger, null, 2) + "\n", { mode: 0o600 }); return; }
+
+  try {
+    const startMs = Date.now();
+    const result = await invokeModeWorker("character", {
+      proactive: true,
+      photoHint: true,
+      text: trigger.ctx ?? "자연스럽게 셀카 한 장 찍어서 보내줘.",
+      userName: "상대방",
+    });
+
+    const generatedImage = findLatestGeneratedImage(startMs, readCharacterSessionId());
+    if (generatedImage) {
+      const msgs = result.answer.split("\n").map((l: string) => l.trim()).filter(Boolean).slice(0, 2);
+      if (msgs.length > 0) {
+        await sendWoongbbiMessages(token, chatId, [msgs[0]]);
+        await Bun.sleep(800 + Math.random() * 1000);
+      }
+      await sendPhotoMessage(token, chatId, generatedImage, "");
+      if (msgs.length > 1) {
+        await Bun.sleep(600 + Math.random() * 800);
+        await sendWoongbbiMessages(token, chatId, [msgs[1]]);
+      }
+      if (msgs.length > 0) logOutgoingTextParts("system", "proactive_photo", msgs);
+      trigger.status = "sent";
+      console.error(`[proactive-photo] fulfilled window=${trigger.window}`);
+    } else {
+      trigger.status = "failed";
+      trigger.error = "no_image";
+      console.error(`[proactive-photo] no image generated, skipping window=${trigger.window}`);
+    }
+  } catch (err) {
+    trigger.status = "failed";
+    trigger.error = err instanceof Error ? err.message : String(err);
+    console.error(`[proactive-photo] error: ${trigger.error}`);
+  }
+  trigger.resolved_at = nowIso();
+  writeFileSync(pendingProactivePhotoFile, JSON.stringify(trigger, null, 2) + "\n", { mode: 0o600 });
 }
 
 function appendMessageLog(payload: any): void {
@@ -1656,10 +1871,29 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
           sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
         }
       } else if (isPhotoDirectReq && !selfBusyNow) {
-        // 사진 워커가 image_gen + send_telegram_photo.py로 직접 처리
-        // 캡션만 브릿지에서 텍스트로 전송 (사진은 워커 내부에서 이미 전송됨)
-        if (!looksLikeImageProcessNarration(finalWorkerResult.answer)) {
-          sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
+        const generatedImage = findLatestGeneratedImage(batchStartMs, readCharacterSessionId());
+        if (generatedImage) {
+          // image_gen 성공 — 워커 send 스크립트가 이미 전송함. 캡션만 보냄.
+          if (!looksLikeImageProcessNarration(finalWorkerResult.answer)) {
+            sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
+          }
+        } else {
+          // image_gen 실패 — 레퍼런스 사진 대신 핑계 문자 전송
+          if (looksLikePhotoDelay(finalWorkerResult.answer)) {
+            sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
+          } else {
+            try {
+              const excuseResult = await invokeModeWorker("character", { photoFailHint: true, text: combinedText, userName });
+              if (excuseResult.answer && !looksLikeImageProcessNarration(excuseResult.answer)) {
+                sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(excuseResult.answer));
+              }
+            } catch {
+              if (!looksLikeImageProcessNarration(finalWorkerResult.answer)) {
+                sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
+              }
+            }
+          }
+          console.error(`[character-batch] image_gen failed, sent photo-fail excuse chat=${chatId}`);
         }
       } else {
         sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
@@ -1673,6 +1907,7 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
       if (!isPhotoDirectReq || selfBusyNow) {
         detectAndSavePhotoPromise(sentParts);
       }
+      detectAndSaveArrivalPromise(sentParts);
     }
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
@@ -1824,8 +2059,12 @@ async function processMessage(token: string, message: any) {
 
   const pendingMessages = targetMode === "character" ? flushPendingIncoming() : [];
 
+  const isVoiceReq = VOICE_REQUEST_RE.test(normalizedText);
+  const isPhotoDirectReq = !isVoiceReq && PHOTO_DIRECT_REQUEST_RE.test(normalizedText);
+  const selfBusyNow = isPhotoDirectReq ? isCharacterBusy(readSelfBusyState()) : false;
+  const singleMsgStartMs = Date.now();
   try {
-    if (!muted) await telegram(token, "sendChatAction", { chat_id: chatId, action: "typing" });
+    if (!muted) await telegram(token, "sendChatAction", { chat_id: chatId, action: isVoiceReq ? "record_voice" : "typing" });
     const workerPayload =
       targetMode === "character"
         ? {
@@ -1834,6 +2073,9 @@ async function processMessage(token: string, message: any) {
             snapshot,
             recentSummary: recentMessageSummary(),
             incomingImages,
+            voiceHint: isVoiceReq,
+            photoHint: isPhotoDirectReq && !selfBusyNow,
+            busyPhotoHint: isPhotoDirectReq && selfBusyNow,
             ...(pendingMessages.length > 0 ? { batchMessages: pendingMessages } : {}),
           }
         : {
@@ -1873,13 +2115,39 @@ async function processMessage(token: string, message: any) {
         if (looksLikeWoongbbiInternalLeak(answer)) {
           throw new Error("character answer suppressed: internal prompt leak detected");
         }
-        if (looksLikeImageProcessNarration(answer)) {
+        if (isPhotoDirectReq && !selfBusyNow) {
+          const generatedImage = findLatestGeneratedImage(singleMsgStartMs, readCharacterSessionId());
+          if (generatedImage) {
+            if (!looksLikeImageProcessNarration(answer)) {
+              sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(answer));
+            }
+          } else {
+            // image_gen 실패 — 레퍼런스 사진 대신 핑계 문자 전송
+            if (looksLikePhotoDelay(answer)) {
+              sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(answer));
+            } else {
+              try {
+                const excuseResult = await invokeModeWorker("character", { photoFailHint: true, text: normalizedText, userName });
+                if (excuseResult.answer && !looksLikeImageProcessNarration(excuseResult.answer)) {
+                  sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(excuseResult.answer));
+                }
+              } catch {
+                if (!looksLikeImageProcessNarration(answer)) {
+                  sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(answer));
+                }
+              }
+            }
+            console.error(`[telegram] image_gen failed, sent photo-fail excuse chat=${chatId}`);
+          }
+          if (sentParts.length > 0) detectAndSetSelfBusy(sentParts);
+        } else if (looksLikeImageProcessNarration(answer)) {
           console.error(`[telegram] suppressed image-process narration (photo already sent by skill) chat=${chatId}: ${answer.slice(0, 120)}`);
         } else {
           sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(answer));
           if (sentParts.length > 0) {
             detectAndSetSelfBusy(sentParts);
             detectAndSavePhotoPromise(sentParts);
+            detectAndSaveArrivalPromise(sentParts);
           }
         }
       } else {
@@ -1954,8 +2222,12 @@ async function main() {
         saveOffset(offset);
         if (update.message) await handleMessage(token, update.message);
       }
-      // 메시지 없을 때마다 photo promise 체크 (long-poll 50s 주기)
-      if (updates.length === 0) await checkPendingPhotoPromise(token);
+      // 메시지 없을 때마다 promise 체크 (long-poll 50s 주기)
+      if (updates.length === 0) {
+        await checkPendingPhotoPromise(token);
+        await checkPendingArrivalPromise(token);
+        await checkPendingProactivePhoto(token);
+      }
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
       console.error(`poll failed: ${detail}`);

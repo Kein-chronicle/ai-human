@@ -1,0 +1,343 @@
+#!/usr/bin/env bun
+// Proactive message sender for 응우 (이은우)
+// Called periodically by launchd (every 20 minutes)
+// Checks conditions and sends time-appropriate proactive messages
+
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { homedir } from "node:os";
+import { dirname } from "node:path";
+
+const cwd = process.env.CODEX_TELEGRAM_CWD ?? "/Users/kein/Projects/lee-eunwoo";
+const stateDir = process.env.CODEX_TELEGRAM_STATE_DIR ?? join(cwd, "session");
+const workerScript = join(dirname(new URL(import.meta.url).pathname), "codex-character-worker");
+
+const proactiveStateFile = join(cwd, "state", "proactive_state.json");
+const proactivePhotoStateFile = join(cwd, "state", "proactive_photo_state.json");
+const pendingProactivePhotoFile = join(cwd, "state", "pending_proactive_photo.json");
+const selfBusyStateFile = join(cwd, "state", "self_busy_state.json");
+const messagesDir = join(cwd, "messages");
+const envFile = join(stateDir, ".env");
+const accessFile = join(stateDir, "access.json");
+const muteFlagFile = join(stateDir, "mute.flag");
+
+const COOLDOWN_MINUTES = 90;
+const SAME_SITUATION_COOLDOWN_MINUTES = 240;
+const QUIET_START_HOUR = 0;  // 00:00 KST
+const QUIET_END_HOUR = 8;    // 08:00 KST
+const ACTIVE_CONV_WINDOW_MINUTES = 12; // 최근 대화 중이면 스킵
+
+function readToken(): string | null {
+  try {
+    const raw = readFileSync(envFile, "utf8");
+    const line = raw.split(/\r?\n/).find((l) => l.startsWith("TELEGRAM_BOT_TOKEN="));
+    return line ? line.slice("TELEGRAM_BOT_TOKEN=".length).trim() : null;
+  } catch { return null; }
+}
+
+function readChatId(): string | null {
+  try {
+    const access = JSON.parse(readFileSync(accessFile, "utf8"));
+    return (access.allowFrom ?? [])[0] ?? null;
+  } catch { return null; }
+}
+
+function nowKstHour(): number {
+  return parseInt(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul", hour: "numeric", hour12: false }),
+    10,
+  );
+}
+
+function nowKstMinutes(): number {
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  return kst.getUTCHours() * 60 + kst.getUTCMinutes();
+}
+
+function isInQuietHours(): boolean {
+  const h = nowKstHour();
+  return h >= QUIET_START_HOUR && h < QUIET_END_HOUR;
+}
+
+function isCharacterBusy(): boolean {
+  try {
+    const state = JSON.parse(readFileSync(selfBusyStateFile, "utf8"));
+    const block = state?.current_block;
+    if (!block || block.type === "free") return false;
+    if (!block.until) return true;
+    const [bh, bm] = (block.until as string).split(":").map(Number);
+    const untilMin = (bh || 0) * 60 + (bm || 0);
+    return nowKstMinutes() < untilMin;
+  } catch { return false; }
+}
+
+function readProactiveState(): any {
+  try { return JSON.parse(readFileSync(proactiveStateFile, "utf8")); }
+  catch { return { last_sent_at: null, send_count_today: 0 }; }
+}
+
+function isCooldownActive(state: any, currentSituation: string): boolean {
+  if (!state.last_sent_at) return false;
+  const lastMs = new Date(state.last_sent_at).getTime();
+  const elapsedMs = Date.now() - lastMs;
+  if (elapsedMs < COOLDOWN_MINUTES * 60 * 1000) return true;
+  if (state.last_situation && currentSituation.startsWith(state.last_situation.slice(0, 10))) {
+    return elapsedMs < SAME_SITUATION_COOLDOWN_MINUTES * 60 * 1000;
+  }
+  return false;
+}
+
+function isActiveConversation(): boolean {
+  try {
+    const files = readdirSync(messagesDir).filter((n) => n.endsWith(".jsonl")).sort().slice(-1);
+    if (files.length === 0) return false;
+    const raw = readFileSync(join(messagesDir, files[0]), "utf8").split(/\r?\n/).filter(Boolean);
+    if (raw.length === 0) return false;
+    const lastEntry = JSON.parse(raw[raw.length - 1]);
+    const lastTs = new Date(lastEntry.timestamp ?? 0).getTime();
+    return Date.now() - lastTs < ACTIVE_CONV_WINDOW_MINUTES * 60 * 1000;
+  } catch { return false; }
+}
+
+function readSchedule(): any {
+  try { return JSON.parse(readFileSync(join(cwd, "state", "daily_schedule_state.json"), "utf8")); }
+  catch { return null; }
+}
+
+function maybeGenerateSchedule(): void {
+  const schedPath = join(cwd, "state", "daily_schedule_state.json");
+  const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  let needGen = true;
+  if (existsSync(schedPath)) {
+    try {
+      const s = JSON.parse(readFileSync(schedPath, "utf8"));
+      if (s?.date === today) needGen = false;
+    } catch {}
+  }
+  if (!needGen) return;
+  try {
+    const { spawnSync } = require("node:child_process");
+    const result = spawnSync(process.execPath, [join(cwd, "tools", "generate_daily_schedule.py")], {
+      encoding: "utf8", timeout: 10000,
+      env: { ...process.env },
+    });
+    if (result.status === 0) console.error("[proactive] schedule generated");
+    else console.error("[proactive] schedule gen failed:", result.stderr?.slice(0, 200));
+  } catch (e: any) {
+    try {
+      const { spawnSync } = require("node:child_process");
+      spawnSync("python3", [join(cwd, "tools", "generate_daily_schedule.py")], { encoding: "utf8", timeout: 10000 });
+    } catch {}
+  }
+}
+
+function buildSituationText(): string {
+  const h = nowKstHour();
+  const sched = readSchedule();
+  const isWeekend = sched?.day_type === "saturday" || sched?.day_type === "sunday";
+
+  if (h >= 7 && h < 9) {
+    if (isWeekend) return "";
+    const commute = sched?.commute_to_work?.route ?? "지하철";
+    return `지금 출근길 (${commute}) 안이야. 상대방한테 자연스럽게 선톡 한마디 해줘.`;
+  }
+  if (h >= 9 && h < 12) {
+    if (isWeekend) return "주말 오전, 여유롭게 브런치하거나 쉬고 있어. 상대방한테 자연스럽게 선톡 해줘.";
+    const reason = sched?.work?.busy_reason ?? "업무 중";
+    return `오전 업무 중 잠깐 숨 돌리는 시간. (${reason}) 상대방 생각나서 짧게 선톡 하나 보내줘.`;
+  }
+  if (h >= 12 && h < 14) {
+    const menu = sched?.lunch?.menu ?? "점심";
+    const loc = sched?.lunch?.location ?? "";
+    const locStr = loc ? ` (${loc})` : "";
+    return `점심시간이야. 오늘 ${menu}${locStr} 먹었어. 상대방은 밥 먹었는지 자연스럽게 선톡 해줘.`;
+  }
+  if (h >= 14 && h < 18) {
+    if (isWeekend) {
+      const act = sched?.daytime?.activity_type ?? "나들이";
+      return `주말 오후, ${act} 중이야. 상대방한테 자연스럽게 짧게 선톡 보내줘.`;
+    }
+    return "오후 업무 중 잠깐 생각나서. 상대방한테 자연스럽게 짧은 선톡 보내줘.";
+  }
+  if (h >= 18 && h < 21) {
+    const depart = sched?.commute_home?.depart_time ?? "퇴근";
+    const note = sched?.commute_home?.note ?? "퇴근 중";
+    return `${depart} ${note}. 집에 오는 길이야. 자연스럽게 선톡 해줘.`;
+  }
+  if (h >= 21) {
+    const dinner = sched?.dinner?.menu ?? "저녁";
+    const rawEve = sched?.evening?.activity_type ?? "";
+    const eve = rawEve.startsWith("없음 (") ? rawEve.slice(4, -1) : (rawEve || "쉬는 중");
+    const nightContent = sched?.night?.content ?? eve;
+    return `집에서 쉬고 있어. 저녁은 ${dinner} 먹었어. ${nightContent} 중이야. 상대방 생각나서 가볍게 선톡 해줘.`;
+  }
+  return "";
+}
+
+function recentMessageSummary(): string {
+  try {
+    const files = readdirSync(messagesDir).filter((n) => n.endsWith(".jsonl")).sort().slice(-2);
+    const lines: string[] = [];
+    for (const file of files) {
+      const raw = readFileSync(join(messagesDir, file), "utf8").split(/\r?\n/).filter(Boolean);
+      for (const line of raw) {
+        try {
+          const ev = JSON.parse(line);
+          if (!["incoming", "outgoing"].includes(ev.direction)) continue;
+          const content = String(ev.content ?? ev.caption ?? "").trim();
+          if (!content) continue;
+          lines.push(`${ev.direction}:${content.slice(0, 80)}`);
+        } catch {}
+      }
+    }
+    return lines.slice(-10).join("\n");
+  } catch { return ""; }
+}
+
+async function invokeWorker(situation: string): Promise<string | null> {
+  const payload = {
+    proactive: true,
+    text: situation,
+    userName: "상대방",
+    recentSummary: recentMessageSummary(),
+  };
+
+  const child = Bun.spawn(["bun", workerScript], {
+    stdin: "pipe",
+    stdout: "pipe",
+    stderr: "pipe",
+    env: {
+      ...process.env,
+      CODEX_TELEGRAM_CWD: cwd,
+      CODEX_TELEGRAM_STATE_DIR: stateDir,
+    },
+  });
+
+  child.stdin.write(JSON.stringify(payload));
+  child.stdin.end();
+
+  const stdout = await new Response(child.stdout).text();
+  const stderr = await new Response(child.stderr).text();
+  const exitCode = await child.exited;
+
+  if (stderr.trim()) console.error(`[worker:stderr] ${stderr.slice(0, 200)}`);
+  if (exitCode !== 0) { console.error(`[proactive] worker failed exit=${exitCode}`); return null; }
+
+  try {
+    const result = JSON.parse(stdout.trim() || "{}");
+    return result?.answer ?? null;
+  } catch { return null; }
+}
+
+async function sendTelegram(token: string, chatId: string, text: string): Promise<boolean> {
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    });
+    return res.ok;
+  } catch { return false; }
+}
+
+const PHOTO_WINDOWS = [
+  { id: "lunch",        startH: 12, endH: 14, ctx: "점심 먹고 있어. 오늘 뭐 먹는지 음식 사진이랑 같이 자연스럽게 짧게 말 걸어줘." },
+  { id: "commute",      startH: 18, endH: 21, ctx: "퇴근하고 집에 오는 길이야. 셀카 찍어서 자연스럽게 짧게 보내줘." },
+  { id: "home_evening", startH: 21, endH: 23, ctx: "씻고 나서 집에서 쉬고 있어. 편한 옷 차림으로 셀카 한 장 찍어서 자연스럽게 말 걸어줘." },
+];
+
+function todayKst(): string {
+  return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+function readProactivePhotoState(): any {
+  try { return JSON.parse(readFileSync(proactivePhotoStateFile, "utf8")); }
+  catch { return { date: "", count_today: 0, sent_windows: [] }; }
+}
+
+function checkAndWritePhotoTrigger(): void {
+  if (existsSync(pendingProactivePhotoFile)) {
+    try {
+      const p = JSON.parse(readFileSync(pendingProactivePhotoFile, "utf8"));
+      if (p?.status === "pending") return;
+    } catch {}
+  }
+
+  const photoState = readProactivePhotoState();
+  const today = todayKst();
+  const sentWindows: string[] = photoState.date === today ? (photoState.sent_windows ?? []) : [];
+  const countToday = photoState.date === today ? (photoState.count_today ?? 0) : 0;
+
+  if (countToday >= 2) return;
+
+  const h = nowKstHour();
+  const win = PHOTO_WINDOWS.find((w) => h >= w.startH && h < w.endH && !sentWindows.includes(w.id));
+  if (!win) return;
+
+  writeFileSync(
+    pendingProactivePhotoFile,
+    JSON.stringify({ created_at: new Date().toISOString(), window: win.id, ctx: win.ctx, status: "pending" }, null, 2) + "\n",
+    { mode: 0o600 },
+  );
+  writeFileSync(
+    proactivePhotoStateFile,
+    JSON.stringify({ date: today, count_today: countToday + 1, sent_windows: [...sentWindows, win.id] }, null, 2) + "\n",
+    { mode: 0o600 },
+  );
+  console.error(`[proactive-photo] trigger written: window=${win.id}`);
+}
+
+async function main() {
+  maybeGenerateSchedule();
+
+  if (existsSync(muteFlagFile)) { console.error("[proactive] muted, skip"); return; }
+  if (isInQuietHours()) { console.error("[proactive] quiet hours, skip"); return; }
+  if (isCharacterBusy()) { console.error("[proactive] character busy, skip"); return; }
+
+  // 사진 proactive 트리거 체크 (대화 중에도 실행 — bridge가 실제 발송 타이밍 조율)
+  if (!isActiveConversation()) checkAndWritePhotoTrigger();
+
+  if (isActiveConversation()) { console.error("[proactive] active conversation, skip"); return; }
+
+  const state = readProactiveState();
+  const situation = buildSituationText();
+  if (!situation) { console.error("[proactive] no situation for this hour"); return; }
+
+  if (isCooldownActive(state, situation)) { console.error("[proactive] cooldown active, skip"); return; }
+
+  const token = readToken();
+  const chatId = readChatId();
+  if (!token || !chatId) { console.error("[proactive] missing token or chatId"); return; }
+
+  console.error(`[proactive] invoking worker for situation: ${situation.slice(0, 60)}`);
+  const answer = await invokeWorker(situation);
+  if (!answer) { console.error("[proactive] worker returned no answer"); return; }
+
+  const msgs = answer.split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 3);
+  let sent = 0;
+  for (const msg of msgs) {
+    const ok = await sendTelegram(token, chatId, msg);
+    if (ok) sent++;
+    if (msgs.indexOf(msg) < msgs.length - 1) await Bun.sleep(600 + Math.random() * 1000);
+  }
+
+  if (sent > 0) {
+    mkdirSync(dirname(proactiveStateFile), { recursive: true });
+    writeFileSync(
+      proactiveStateFile,
+      JSON.stringify({
+        last_sent_at: new Date().toISOString(),
+        send_count_today: (state.send_count_today ?? 0) + 1,
+        last_situation: situation.slice(0, 80),
+        last_answer_preview: msgs[0]?.slice(0, 60) ?? "",
+      }, null, 2) + "\n",
+      { mode: 0o600 },
+    );
+    console.error(`[proactive] sent ${sent}/${msgs.length} messages`);
+  }
+}
+
+main().catch((err) => {
+  console.error("[proactive] fatal:", err?.message ?? String(err));
+  process.exit(1);
+});

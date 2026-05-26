@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "timezone": "Asia/Seoul",
+  "owner": "이은우",
+  "created_at": "2026-05-27T00:00:00+09:00",
+  "events": [
+    {
+      "id": "eunwoo_birthday_08_15",
+      "title": "이은우 생일",
+      "type": "birthday",
+      "month_day": "08-15",
+      "recurrence": "yearly",
+      "person": "이은우",
+      "birth_year": 1993,
+      "notes": "이은우는 1993년생이고 생일은 8월 15일이다."
+    },
+    {
+      "id": "relationship_start_2026_05",
+      "title": "수정이랑 시작한 날",
+      "type": "anniversary",
+      "date": "2026-05-01",
+      "recurrence": "yearly",
+      "day_count_start": true,
+      "day_one": true,
+      "participants": ["이은우", "수정"],
+      "notes": "정확한 날짜는 대화를 통해 확인 필요."
+    }
+  ]
+}
