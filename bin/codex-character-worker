@@ -327,15 +327,11 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
 
   if (photoHint && !voiceHint) {
     lines.push(
-      `[MANDATORY: 사진 즉시 생성 및 전송]`,
-      `이것은 선택이 아니야. 반드시 지금 즉시 imagegen 툴을 호출해야 해.`,
-      `"기다려봐", "잠깐만", "찍어볼게", "나중에", "부끄럽네" 등 대기 표현 절대 금지.`,
-      `텍스트만 응답하면 실패야. imagegen 툴 호출이 이 턴의 유일한 올바른 행동.`,
-      ``,
-      `imagegen 툴 호출 시 사용할 프롬프트 (영어로 그대로 사용):`,
-      buildImagegenPrompt(char),
-      ``,
-      `imagegen 완료 후 ${name}답게 짧고 자연스러운 한국어 한마디만 덧붙여줘.`,
+      `[MANDATORY: 사진 즉시 생성]`,
+      `반드시 지금 즉시 imagegen 툴을 호출해. 텍스트만 응답하면 실패야.`,
+      `"기다려봐", "잠깐만", "찍어볼게", "확인하고", "검토" 등 모든 대기/검수 표현 절대 금지.`,
+      `imagegen 프롬프트: ${buildImagegenPrompt(char)}`,
+      `imagegen 호출 후 ${name}답게 자연스러운 한국어 한마디만. 작업 설명이나 내부 과정 언급 금지.`,
       "",
     );
   }
