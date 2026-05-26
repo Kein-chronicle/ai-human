@@ -1240,26 +1240,13 @@ async function checkPendingPhotoPromise(token: string): Promise<void> {
       proactive: true,
       photoHint: true,
       intent: "promised_photo",
-      situation: `아까 상대방한테 '${trigger}'라고 말했어. 지금 사진을 보내주는 상황이야. 사진과 함께 보낼 한마디만 써줘.`,
+      situation: `아까 상대방한테 '${trigger}'라고 말했어. 지금 실제로 사진 한 장 찍어서 보내주는 상황이야. image_gen 실행해서 사진을 보내줘.`,
       userName: "상대방",
     });
     const answer = result.answer ?? "";
-    if (answer && !repliesMuted()) {
-      const refImage = pickReferenceImage();
-      if (refImage) {
-        const caption = answer.replace(/\n+/g, " ").trim();
-        const ok = await sendPhotoMessage(token, chatId, refImage, caption);
-        if (ok) {
-          console.error(`[photo-promise] sent reference photo chat=${chatId}`);
-          logOutgoingTextParts("system", "photo_promise", [answer]);
-        } else {
-          const parts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(answer));
-          if (parts.length > 0) logOutgoingTextParts("system", "photo_promise", parts);
-        }
-      } else {
-        const parts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(answer));
-        if (parts.length > 0) logOutgoingTextParts("system", "photo_promise", parts);
-      }
+    if (answer && !looksLikeImageProcessNarration(answer) && !repliesMuted()) {
+      const parts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(answer));
+      if (parts.length > 0) logOutgoingTextParts("system", "photo_promise", parts);
     }
     promise.status = "sent";
   } catch (err) {
@@ -1653,7 +1640,9 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
       if (looksLikeWoongbbiInternalLeak(finalWorkerResult.answer)) {
         throw new Error("character answer suppressed: internal prompt leak detected");
       }
-      if (isVoiceReq) {
+      if (looksLikeImageProcessNarration(finalWorkerResult.answer)) {
+        console.error(`[character-batch] suppressed image-process narration (photo sent by worker) chat=${chatId}: ${finalWorkerResult.answer.slice(0, 120)}`);
+      } else if (isVoiceReq) {
         const audio = await generateElevenLabsAudio(finalWorkerResult.answer);
         if (audio) {
           const ok = await sendVoiceMessage(token, chatId, audio);
@@ -1667,20 +1656,9 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
           sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
         }
       } else if (isPhotoDirectReq && !selfBusyNow) {
-        // 직접 사진 요청: 레퍼런스 이미지 선택 후 캡션과 함께 전송
-        if (!muted) await telegram(token, "sendChatAction", { chat_id: chatId, action: "upload_photo" });
-        const refImage = pickReferenceImage();
-        if (refImage) {
-          const caption = finalWorkerResult.answer.replace(/\n+/g, " ").trim();
-          const ok = await sendPhotoMessage(token, chatId, refImage, caption);
-          if (ok) {
-            console.error(`[photo] sent reference photo chat=${chatId} img=${refImage}`);
-            sentParts = [finalWorkerResult.answer];
-          } else {
-            sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
-          }
-        } else {
-          console.error(`[photo] no reference image found, falling back to text chat=${chatId}`);
+        // 사진 워커가 image_gen + send_telegram_photo.py로 직접 처리
+        // 캡션만 브릿지에서 텍스트로 전송 (사진은 워커 내부에서 이미 전송됨)
+        if (!looksLikeImageProcessNarration(finalWorkerResult.answer)) {
           sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
         }
       } else {
@@ -1692,7 +1670,6 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
     if (sentParts.length > 0) {
       logOutgoingTextParts(userName, isVoiceReq ? "voice" : (isPhotoDirectReq && !selfBusyNow ? "photo" : "text"), sentParts);
       detectAndSetSelfBusy(sentParts);
-      // 직접 요청: promise 큐 스킵. 바쁜 상황이거나 캐릭터가 먼저 약속한 경우에만 저장
       if (!isPhotoDirectReq || selfBusyNow) {
         detectAndSavePhotoPromise(sentParts);
       }

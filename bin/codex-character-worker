@@ -327,10 +327,14 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
 
   if (photoHint && !voiceHint) {
     lines.push(
-      `[사진 캡션]`,
-      `지금 ${name}이 사진 한 장을 보내는 상황이야.`,
-      `사진과 함께 보낼 자연스러운 한국어 한마디만 써줘. 이모지 적당히, 짧게.`,
-      `사진 전송은 별도로 처리되니 전송 여부나 방법은 언급하지 마.`,
+      `[MANDATORY: 사진 생성 및 전송]`,
+      `반드시 다음 순서로 실행해:`,
+      `1. built-in image_gen 툴 호출:`,
+      `   prompt: "${buildImagegenPrompt(char)}"`,
+      `2. 생성 직후 아래 shell command 실행 (exec_command 툴):`,
+      `   IMGPATH=$(ls -t ~/.codex/generated_images/**/*.png 2>/dev/null | head -1) && python3 /Users/kein/.codex/skills/telegram-image-send/scripts/send_telegram_photo.py --state-dir "$CODEX_TELEGRAM_STATE_DIR" --image "$IMGPATH"`,
+      `3. 전송 완료 후 ${name}답게 자연스러운 한국어 한마디만. 작업 설명·내부 과정 언급 금지.`,
+      `image_gen 없이 텍스트만 내면 실패.`,
       "",
     );
   }
