@@ -1,0 +1,24 @@
+# Environment & secrets
+.env
+session/.env
+session/azure-speech.env
+session/elevenlabs.env
+*.env
+
+# Session runtime state (don't commit live session)
+session/
+state/*.lock
+state/runtime/
+
+# Generated images (large)
+images/generated/
+images/incoming/
+
+# Logs
+*.log
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+**/.DS_Store
+working/

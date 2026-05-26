@@ -1,0 +1,382 @@
+#!/usr/bin/env bun
+// =============================================================================
+// ai-human-maker — Generic Telegram Codex Worker
+//
+// Reads character.json to build prompts dynamically.
+// Supports any character definition — gender, profession, personality, language.
+//
+// Usage: echo '{"text":"...","snapshot":{}}' | bun bin/codex-telegram-worker
+// =============================================================================
+
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join, dirname } from "node:path";
+
+// =============================================================================
+// PATHS
+// =============================================================================
+
+const projectRoot = process.env.AI_HUMAN_ROOT ?? join(homedir(), "Projects", "ai-human-maker");
+const characterConfigPath = process.env.CHARACTER_CONFIG ?? join(projectRoot, "character.json");
+const stateDir = process.env.AI_HUMAN_STATE_DIR ?? join(projectRoot, "session");
+const cwd = process.env.AI_HUMAN_CWD ?? projectRoot;
+const codexBin = process.env.CODEX_BIN ?? "codex";
+
+// =============================================================================
+// CHARACTER CONFIG
+// =============================================================================
+
+function loadCharacter(): any {
+  if (!existsSync(characterConfigPath)) {
+    throw new Error(`character.json not found at ${characterConfigPath}. Copy character.example.json and fill it in.`);
+  }
+  return JSON.parse(readFileSync(characterConfigPath, "utf8"));
+}
+
+const char = loadCharacter();
+const callName: string = char.identity?.call_name ?? char.identity?.name ?? "AI";
+const sessionIdFile = join(stateDir, `codex-session.${callName.toLowerCase()}.id`);
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+function readJsonFile(path: string): any {
+  try { return JSON.parse(readFileSync(path, "utf8")); } catch { return {}; }
+}
+
+const nowKstHHMM = (): string => {
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  return `${String(kst.getUTCHours()).padStart(2, "0")}:${String(kst.getUTCMinutes()).padStart(2, "0")}`;
+};
+
+const hhmToMinutes = (hhmm: string): number => {
+  const [h, m] = (hhmm || "").split(":").map(Number);
+  if (!Number.isFinite(h)) return -1;
+  return h * 60 + (m || 0);
+};
+
+const todayKstDate = (): string =>
+  new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
+
+// =============================================================================
+// CONTENT LEVEL
+// =============================================================================
+
+function computeContentLevel(snapshot: any, imagePlan: any = {}): number {
+  const activity = String(imagePlan?.activity || snapshot?.current_activity || "");
+  const rules = char.content_levels?.rules ?? {};
+
+  // Work activities → level from config (default 1)
+  const workActivities = new Set<string>(char.profession?.work_activities ?? []);
+  if (workActivities.has(activity)) return rules.work_activities ?? 1;
+
+  // Commuting → level from config (default 2)
+  if (["commuting_to_work", "commuting_home"].includes(activity)) return rules.commuting ?? 2;
+
+  // Home evening variants
+  if (["night_wind_down", "sleep_window", "weekend_evening"].includes(activity)) {
+    return rules.home_evening ?? 3;
+  }
+
+  return rules.default ?? 3;
+}
+
+// =============================================================================
+// SESSION
+// =============================================================================
+
+function readSessionId(): string | null {
+  try {
+    const id = readFileSync(sessionIdFile, "utf8").trim();
+    return id || null;
+  } catch { return null; }
+}
+
+function saveSessionId(id: string): void {
+  writeFileSync(sessionIdFile, `${id}\n`, { mode: 0o600 });
+}
+
+// =============================================================================
+// CODEX RUNNER
+// =============================================================================
+
+const CODEX_TIMEOUT_MS = 300_000;
+
+async function runCodexOnce(
+  prompt: string,
+  imagePaths: string[] = [],
+  sessionId: string | null = null,
+  timeoutMs: number = CODEX_TIMEOUT_MS,
+): Promise<string> {
+  const args = ["--approval-policy", "auto", "--no-project-doc", "-q"];
+  if (sessionId) args.push("--session", sessionId);
+  const modelOverride = process.env.CODEX_MODEL ?? char.codex?.model;
+  if (modelOverride) args.push("-m", modelOverride);
+  if (imagePaths.length) args.push(...imagePaths.flatMap((p) => ["--image", p]));
+  args.push(prompt);
+
+  const child = Bun.spawn([codexBin, ...args], {
+    stdin: "pipe",
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+
+  const killTimer = setTimeout(() => child.kill(), timeoutMs);
+  const stdout = await new Response(child.stdout).text();
+  const stderr = await new Response(child.stderr).text();
+  const exitCode = await child.exited;
+  clearTimeout(killTimer);
+
+  // Try to capture session ID from stderr
+  const sessionMatch = stderr.match(/session[_\s]?id[:\s]+([a-f0-9-]{36})/i);
+  if (sessionMatch?.[1]) saveSessionId(sessionMatch[1]);
+
+  if (exitCode !== 0 && !stdout.trim()) {
+    throw new Error(`codex exited ${exitCode}: ${stderr.slice(0, 400)}`);
+  }
+  return stdout.trim();
+}
+
+async function runCodex(prompt: string, imagePaths: string[] = []): Promise<string> {
+  const sessionId = readSessionId();
+  try {
+    return await runCodexOnce(prompt, imagePaths, sessionId);
+  } catch (err) {
+    if (sessionId) {
+      return await runCodexOnce(prompt, imagePaths, null);
+    }
+    throw err;
+  }
+}
+
+// =============================================================================
+// FACE REFERENCES
+// =============================================================================
+
+function attachedImagePaths(incomingImages: any[]): string[] {
+  return (incomingImages ?? [])
+    .map((img: any) => (typeof img === "string" ? img : img?.path))
+    .filter((p): p is string => typeof p === "string" && existsSync(p));
+}
+
+function buildFaceRefLines(): string[] {
+  const refDir = (char.appearance?.face_reference_dir ?? "characters/{call_name}/references/curated")
+    .replace("{call_name}", callName);
+  const absRefDir = join(cwd, refDir);
+  if (!existsSync(absRefDir)) {
+    return ["[face_reference] 아직 얼굴 레퍼런스 이미지가 없습니다. characters 디렉토리에 추가하세요."];
+  }
+  const { readdirSync } = require("node:fs");
+  const files = readdirSync(absRefDir).filter((f: string) => /\.(jpg|jpeg|png)$/i.test(f)).slice(0, 5);
+  if (!files.length) return ["[face_reference] 레퍼런스 이미지 없음."];
+  const paths = files.map((f: string) => join(absRefDir, f));
+  return [
+    "[face_reference]",
+    `⚠️ 모든 imagegen 호출 시 아래 레퍼런스를 --image로 전달한다:`,
+    ...paths.map((p: string) => `  --image "${p}"`),
+    "",
+  ];
+}
+
+// =============================================================================
+// PROMPT BUILDERS
+// =============================================================================
+
+function buildIdentitySection(): string[] {
+  const id = char.identity ?? {};
+  const prof = char.profession ?? {};
+  const rel = char.relationship ?? {};
+  const pers = char.personality ?? {};
+  const lang = id.language ?? "ko";
+
+  return [
+    "[character_identity]",
+    `이름: ${id.name} (${id.call_name ?? id.name}), 나이: ${id.age ?? "?"}세, 성별: ${id.gender ?? "미지정"}`,
+    `직업: ${prof.type ?? "미지정"} / 근무지: ${prof.workplace ?? "미지정"}`,
+    `사용자와의 관계: ${rel.type ?? "friend"} (${rel.dynamic ?? ""})`,
+    `언어: ${lang}`,
+    `사용자 호칭: ${id.user_address ?? "you"}`,
+    `말투 스타일: ${pers.tone ?? "natural"} / 특징: ${(pers.base_traits ?? []).join(", ")}`,
+    "",
+  ];
+}
+
+function buildStyleSeed(snapshot: any, recentSummary: string): string[] {
+  const recentOutgoing = (recentSummary || "").split("\n")
+    .filter((l) => l.startsWith("outgoing:"))
+    .slice(-3)
+    .map((l) => l.replace(/^outgoing:[^:]+:/, "").trim());
+
+  const mood = String(snapshot?.surface_mood ?? "");
+  const energy = Number(snapshot?.energy_level ?? 50);
+  const affection = Number(snapshot?.affection_level ?? 50);
+
+  return [
+    "",
+    "[response_style_selection]",
+    "아래 스타일 중 현재 컨텍스트에 가장 자연스러운 것을 골라 실행한다. 직전 패턴과 같은 구조는 피한다.",
+    `현재 상태: mood=${mood}, energy=${energy}/100, affection=${affection}/100`,
+    `직전 아웃고잉: ${recentOutgoing.length ? recentOutgoing.map((m) => `"${m.slice(0, 40)}"`).join(" / ") : "없음"}`,
+    "",
+    "A. 즉각단답 — 짧은 반응만, 설명/당부 없이 닫기. (템포 빠를 때, 직전이 길었을 때)",
+    "B. 내얘기먼저 — 짧게 호응 후 내 상황/생각으로 이어가기. (공유할 상황이 있을 때)",
+    "C. 흘리기 — 오빠 말 최소 반응 + 자연스럽게 다른 주제로. (대화 흐름 전환 필요 시)",
+    "D. 멀티메시지 — \\n\\n으로 2~3통 분리. 첫 통 단답. (생각이 연결될 때)",
+    "E. 담백 — 당부·질문 없이 가볍게 받고 끝. (직전에 당부 반복됐을 때)",
+    "F. 장난기 — 가볍게 놀리거나 받아치기. (affection 높고 분위기 가벼울 때)",
+    "G. 무심 — 1문장, 이모지/질문 없이 쿨하게. (energy 낮을 때)",
+    "H. 솔직 — 꾸밈없이 현재 감정/상태만. (피곤하거나 감정 나눌 때)",
+    "",
+  ];
+}
+
+function buildSnapshotSection(snapshot: any): string[] {
+  if (!snapshot || !Object.keys(snapshot).length) return [];
+  return [
+    "[snapshot]",
+    `activity=${snapshot.current_activity ?? ""}`,
+    `time_block=${snapshot.current_time_block ?? ""}`,
+    `surface_mood=${snapshot.surface_mood ?? ""}`,
+    `energy=${snapshot.energy_level ?? ""}`,
+    `affection=${snapshot.affection_level ?? ""}`,
+    "",
+  ];
+}
+
+function buildStateSection(): string[] {
+  const dailyPath = join(cwd, "state", "daily_schedule_state.json");
+  const daily = readJsonFile(dailyPath);
+  if (!daily?.date) return [];
+
+  const lines = ["[daily_schedule_summary]", `date=${daily.date}, type=${daily.day_type ?? "unknown"}`];
+  if (daily.commute_to_work?.depart_time) lines.push(`출근: ${daily.commute_to_work.depart_time} 출발`);
+  if (daily.commute_home?.depart_time) lines.push(`퇴근: ${daily.commute_home.depart_time} 출발`);
+  if (daily.morning?.outfit) lines.push(`복장: ${daily.morning.outfit}`);
+  lines.push("");
+  return lines;
+}
+
+function buildContentLevelSection(level: number): string[] {
+  const desc = char.content_levels?.description ?? "1=conservative, 2=semi-expressive, 3=expressive";
+  return [
+    "[content_level]",
+    `현재 레벨: ${level} (${desc})`,
+    level === 1
+      ? "근무 중: 사진 생성 시 직업 복장, 근무 환경에 맞게. 노출 최소."
+      : level === 2
+      ? "이동 중: 일상적인 외출 복장. 자연스러운 셀피."
+      : "집/저녁/프라이빗: 홈웨어·loungewear 가능. 상황에 맞는 복장.",
+    "",
+  ];
+}
+
+function buildImageSendRules(): string[] {
+  const scriptPath = join(cwd, char.image_generation?.send_script ?? "scripts/send_telegram_photo.py");
+  return [
+    "[image_send_step_MANDATORY]",
+    "image_gen 툴 호출 성공 직후 반드시 아래 단계를 실행한다:",
+    "단계 1 — 생성 파일 확인:",
+    "  IMGPATH=$(ls -t ~/.codex/generated_images/**/*.png 2>/dev/null | head -1)",
+    "단계 2 — 전송:",
+    `  python3 ${scriptPath} --state-dir ${stateDir} --image \"$IMGPATH\"`,
+    "단계 3 — 전송 확인 후 텍스트 답변.",
+    "⚠️ send_telegram_photo.py 없이 텍스트만 보내면 사진 미전달.",
+    "",
+  ];
+}
+
+function buildRecentMessages(recentSummary: string): string[] {
+  if (!recentSummary) return [];
+  return ["[recent_messages]", recentSummary, ""];
+}
+
+function buildConversationRules(): string[] {
+  const lang = char.identity?.language ?? "ko";
+  return [
+    "[conversation_rules]",
+    `언어: ${lang}만 사용한다.`,
+    "답변은 Telegram 메시지로 그대로 전송된다. 최종 사용자에게 보일 내용만 출력.",
+    "작업 과정(이미지 생성 중, 파일 찾는 중 등) 절대 채팅에 출력 금지.",
+    "",
+    "[길이·리듬]",
+    "답변 길이를 들쭉날쭉하게. 짧은 단답(5~20자)이 40% 이상.",
+    "빈 줄(\\n\\n)은 별도 메시지로 분리됨 — 10번 중 3~4번 자연스럽게 활용.",
+    "이모지: 없는 답변이 절반 이상. 감정 클 때만 1~3개.",
+    "매 답변 끝에 이모지 고정 금지. 매 답변 되묻기 금지.",
+    "",
+  ];
+}
+
+// =============================================================================
+// MAIN PROMPT BUILDER
+// =============================================================================
+
+function buildPrompt(
+  text: string,
+  userName: string,
+  snapshot: any,
+  recentSummary: string,
+  incomingImages: any[] = [],
+): string {
+  const imagePlanPath = join(cwd, "state", "image_prompt_plan.json");
+  const imagePlan = existsSync(imagePlanPath) ? readJsonFile(imagePlanPath) : {};
+  const contentLevel = computeContentLevel(snapshot, imagePlan);
+
+  const voideGuidePath = (char.personality?.voice_guide_path ?? "")
+    .replace("{call_name}", callName);
+  const voiceGuideAbs = join(cwd, voideGuidePath);
+  const voiceGuideNote = existsSync(voiceGuideAbs)
+    ? `말투 상세 가이드: ${voiceGuideAbs} 참조.`
+    : "말투 가이드 없음 — personality.tone 기반으로 자연스럽게.";
+
+  const sections: string[] = [
+    "너는 Telegram에서 들어온 메시지를 처리하는 AI다.",
+    `${char.identity?.language === "ko" ? "한국어로만 답한다." : `${char.identity?.language ?? "en"}로만 답한다.`}`,
+    `사용자를 ${char.identity?.user_address ?? "you"}라고 부른다.`,
+    "",
+    ...buildIdentitySection(),
+    ...buildStyleSeed(snapshot, recentSummary),
+    ...buildSnapshotSection(snapshot),
+    `현재 시각 (KST): ${nowKstHHMM()}`,
+    "",
+    ...buildStateSection(),
+    ...buildContentLevelSection(contentLevel),
+    voiceGuideNote,
+    "",
+    ...buildConversationRules(),
+    ...buildFaceRefLines(),
+    ...buildImageSendRules(),
+    ...buildRecentMessages(recentSummary),
+    `<telegram user="${userName}">`,
+    text,
+    `</telegram>`,
+  ];
+
+  return sections.join("\n");
+}
+
+// =============================================================================
+// MAIN
+// =============================================================================
+
+async function main() {
+  const raw = readFileSync(0, "utf8").trim();
+  const input = JSON.parse(raw || "{}");
+
+  const text = String(input.text ?? "");
+  const userName = String(input.userName ?? "user");
+  const snapshot = input.snapshot ?? {};
+  const recentSummary = String(input.recentSummary ?? "");
+  const incomingImages = Array.isArray(input.incomingImages) ? input.incomingImages : [];
+
+  const prompt = buildPrompt(text, userName, snapshot, recentSummary, incomingImages);
+  const answer = await runCodex(prompt, attachedImagePaths(incomingImages));
+
+  process.stdout.write(JSON.stringify({ answer, routerPath: "full", routerReason: "default" }));
+}
+
+main().catch((err) => {
+  console.error(err?.stack ?? String(err));
+  process.exit(1);
+});
