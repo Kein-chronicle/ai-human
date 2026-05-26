@@ -50,21 +50,91 @@ function loadFaceRefs(char: any): string[] {
   }
 }
 
+type SituationContext = {
+  outfit: string;
+  location: string;
+  lighting: string;
+  mood: string;
+  shotStyle: string;
+};
+
+function currentSituationContext(char: any): SituationContext {
+  const kstHour = parseInt(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul", hour: "numeric", hour12: false }), 10);
+  const prof = char?.profession ?? {};
+  const workType = prof.type ?? "";
+  const app = char?.appearance ?? {};
+  const workStyle = app.style ?? "";
+
+  // 변호사 기준 시간대별 상황
+  if (kstHour >= 7 && kstHour < 9) {
+    return {
+      outfit: "fitted suit jacket, dress shirt, no tie yet",
+      location: "subway platform or train interior, morning commute",
+      lighting: "bright fluorescent light, morning crowd",
+      mood: "alert, slightly tired",
+      shotStyle: "candid selfie on the train, hand holding phone at arm length",
+    };
+  } else if (kstHour >= 9 && kstHour < 12) {
+    return {
+      outfit: "full suit and tie, professional lawyer attire",
+      location: "law firm office, desk with documents in background",
+      lighting: "office fluorescent light, daytime",
+      mood: "focused, composed",
+      shotStyle: "quick selfie at desk or office hallway",
+    };
+  } else if (kstHour >= 12 && kstHour < 14) {
+    return {
+      outfit: "suit jacket off, dress shirt with rolled sleeves",
+      location: "restaurant near office or outdoor bench, lunch break",
+      lighting: "natural daylight, outdoor or large window",
+      mood: "relaxed, light smile",
+      shotStyle: "casual candid selfie during lunch",
+    };
+  } else if (kstHour >= 14 && kstHour < 18) {
+    return {
+      outfit: "full suit, courtroom or office setting",
+      location: "law firm corridor, meeting room, or courthouse hallway",
+      lighting: "office ambient light, afternoon",
+      mood: "professional, slightly tired",
+      shotStyle: "quick candid selfie in hallway or office",
+    };
+  } else if (kstHour >= 18 && kstHour < 21) {
+    return {
+      outfit: "suit jacket loosened or over shoulder, top button undone",
+      location: "subway or street, evening commute",
+      lighting: "city evening lights, warm urban glow",
+      mood: "relieved, end of day",
+      shotStyle: "selfie on commute home, relaxed expression",
+    };
+  } else {
+    return {
+      outfit: "casual home clothes — t-shirt and jogger pants or shorts",
+      location: "home living room or bedroom, cozy atmosphere",
+      lighting: "warm lamp light, evening indoor",
+      mood: "relaxed, comfortable",
+      shotStyle: "casual selfie at home, natural and unstaged",
+    };
+  }
+}
+
 function buildImagegenPrompt(char: any): string {
   const app = char?.appearance ?? {};
   const hair = app.hair ?? "short dark hair";
   const height = app.height ? `${app.height}cm` : "";
   const build = app.build ?? "slim";
-  const style = app.style ?? "";
   const age = char?.identity?.age ?? "";
   const nationality = char?.identity?.nationality ?? "Korean";
+  const ctx = currentSituationContext(char);
 
   return [
-    `A photorealistic candid smartphone photo of a ${nationality} man${age ? ` in his early ${age}s` : ""}.`,
+    `A photorealistic candid smartphone photo of a ${nationality} man in his early ${age}s.`,
     `${height ? height + ", " : ""}${build} build, ${hair}.`,
-    style ? `${style}.` : "",
-    `Natural selfie or candid shot aesthetic. Soft indoor lighting.`,
-    `Maintain consistent look and vibe with the attached reference images.`,
+    `Outfit: ${ctx.outfit}.`,
+    `Location: ${ctx.location}.`,
+    `Lighting: ${ctx.lighting}.`,
+    `Expression/mood: ${ctx.mood}.`,
+    `Shot style: ${ctx.shotStyle}.`,
+    `Natural candid aesthetic, not posed. Realistic skin texture, slight film grain.`,
   ].filter(Boolean).join(" ");
 }
 
