@@ -232,7 +232,7 @@ function nowKST(): string {
   return new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false });
 }
 
-function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: string }, text: string, userName: string, recentSummary: string, batchMessages: any[], photoHint = false, voiceHint = false): string {
+function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: string }, text: string, userName: string, recentSummary: string, batchMessages: any[], photoHint = false, voiceHint = false, busyPhotoHint = false): string {
   const id = char?.identity ?? {};
   const prof = char?.profession ?? {};
   const rel = char?.relationship ?? {};
@@ -305,6 +305,16 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
     lines.push("위 메시지들을 자연스럽게 한번에 답장해줘.", "");
   }
 
+  if (busyPhotoHint) {
+    lines.push(
+      `[사진 요청 — 지금 바쁜 상황]`,
+      `상대방이 사진을 요청했지만 ${name}은 지금 바쁜 상태야.`,
+      `자연스럽게 지금 왜 못 보내는지 이유를 말해줘. (예: 회의 중, 재판 준비 중 등 직업에 맞는 이유)`,
+      `금방 끝나면 곧 보내주겠다고 이야기해줘.`,
+      "",
+    );
+  }
+
   if (voiceHint) {
     lines.push(
       `[음성 메시지 생성 지시]`,
@@ -346,14 +356,15 @@ async function main() {
   const recentSummary = String(input.recentSummary ?? "") || recentMessageSummary(20);
   const batchMessages: any[] = Array.isArray(input.batchMessages) ? input.batchMessages : [];
   const voiceHint = Boolean(input.voiceHint);
-  const photoHint = !voiceHint && (Boolean(input.photoHint) || isPhotoRequest(text));
+  const busyPhotoHint = Boolean(input.busyPhotoHint);
+  const photoHint = !voiceHint && !busyPhotoHint && (Boolean(input.photoHint) || isPhotoRequest(text));
 
   const char = loadCharacter();
   const voiceGuide = loadVoiceGuide(char);
   const userIdentity = loadUserIdentity();
 
   const faceRefs = photoHint ? loadFaceRefs(char) : [];
-  const prompt = buildPrompt(char, voiceGuide, userIdentity, text, userName, recentSummary, batchMessages, photoHint, voiceHint);
+  const prompt = buildPrompt(char, voiceGuide, userIdentity, text, userName, recentSummary, batchMessages, photoHint, voiceHint, busyPhotoHint);
 
   const answer = await runCodex(prompt, faceRefs);
   process.stdout.write(JSON.stringify({ answer, routerPath: "full", routerReason: "character_worker" }));

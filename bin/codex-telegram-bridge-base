@@ -70,6 +70,7 @@ function readEnvValue(key: string): string {
 }
 
 const VOICE_REQUEST_RE = /목소리\s*(들려|보내|해|줘|보여)|음성\s*(보내|줘|들려)|보이스|voice/i;
+const PHOTO_DIRECT_REQUEST_RE = /사진\s*(보내|줘|줄|좀|보여|찍어|올려)|셀카|얼굴\s*(보여|보내)/;
 
 async function generateElevenLabsAudio(text: string): Promise<Uint8Array | null> {
   const apiKey = readEnvValue("ELEVENLABS_API_KEY");
@@ -1564,6 +1565,8 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
 
   const batchStartMs = Date.now();
   const isVoiceReq = VOICE_REQUEST_RE.test(normalizedText);
+  const isPhotoDirectReq = !isVoiceReq && PHOTO_DIRECT_REQUEST_RE.test(normalizedText);
+  const selfBusyNow = isPhotoDirectReq ? isCharacterBusy(readSelfBusyState()) : false;
   try {
     if (!muted) await telegram(token, "sendChatAction", { chat_id: chatId, action: isVoiceReq ? "record_voice" : "typing" });
     const workerResult = await invokeModeWorker("character", {
@@ -1573,6 +1576,8 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
       recentSummary: recentMessageSummary(),
       incomingImages: allImages,
       voiceHint: isVoiceReq,
+      photoHint: isPhotoDirectReq && !selfBusyNow,
+      busyPhotoHint: isPhotoDirectReq && selfBusyNow,
     });
     appendResponseDecisionLog({
       decision_type: "bridge_router",
@@ -1610,7 +1615,15 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
     } else {
       console.error(`[telegram] muted character-batch reply suppressed chat=${chatId}`);
     }
-    if (sentParts.length > 0) logOutgoingTextParts(userName, isVoiceReq ? "voice" : "text", sentParts);
+    if (sentParts.length > 0) {
+      logOutgoingTextParts(userName, isVoiceReq ? "voice" : "text", sentParts);
+      detectAndSetSelfBusy(sentParts);
+      // 직접 요청 + 바쁘지 않음: imagegen 이미 시도됐으니 promise 큐 스킵
+      // 바쁜 상황이거나 캐릭터가 먼저 약속한 경우에만 저장
+      if (!isPhotoDirectReq || selfBusyNow) {
+        detectAndSavePhotoPromise(sentParts);
+      }
+    }
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error(`[character-batch] error chat=${chatId}: ${detail}`);
