@@ -373,6 +373,23 @@ function buildPrompt(
 // MAIN
 // =============================================================================
 
+// Voice unavailable fallback — returned when ELEVENLABS_VOICE_ID not set
+// and user requests a voice message
+const VOICE_UNAVAILABLE_REPLIES: Record<string, string[]> = {
+  ko: ["아 목소리는 지금 못 보내ㅠ", "목소리 기능이 아직 없어", "목소리는 좀 있다가"],
+  en: ["Can't send voice right now", "No voice available yet", "Voice isn't set up yet"],
+};
+
+function isVoiceRequest(text: string): boolean {
+  return /목소리|음성|보이스|voice\s*msg|voice\s*message|record/i.test(text);
+}
+
+function voiceUnavailableReply(): string {
+  const lang = char.identity?.language ?? "en";
+  const pool = VOICE_UNAVAILABLE_REPLIES[lang] ?? VOICE_UNAVAILABLE_REPLIES.en;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 async function main() {
   const raw = readFileSync(0, "utf8").trim();
   const input = JSON.parse(raw || "{}");
@@ -382,6 +399,17 @@ async function main() {
   const snapshot = input.snapshot ?? {};
   const recentSummary = String(input.recentSummary ?? "");
   const incomingImages = Array.isArray(input.incomingImages) ? input.incomingImages : [];
+
+  // Voice request but no ElevenLabs configured → hardcoded reply
+  const hasVoice = Boolean(process.env.ELEVENLABS_VOICE_ID);
+  if (!hasVoice && isVoiceRequest(text)) {
+    process.stdout.write(JSON.stringify({
+      answer: voiceUnavailableReply(),
+      routerPath: "voice_unavailable",
+      routerReason: "elevenlabs_not_configured",
+    }));
+    return;
+  }
 
   const prompt = buildPrompt(text, userName, snapshot, recentSummary, incomingImages);
   const answer = await runCodex(prompt, attachedImagePaths(incomingImages));
