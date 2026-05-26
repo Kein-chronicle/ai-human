@@ -16,6 +16,9 @@ const messagesDir = join(cwd, "messages");
 const characterConfigPath = process.env.CHARACTER_CONFIG ?? join(cwd, "character.json");
 const userIdentityFile = join(cwd, "state", "user_identity.json");
 const userPersonaFactsFile = join(cwd, "state", "user_persona_facts.json");
+const recentConversationMemoryFile = join(cwd, "state", "recent_conversation_memory.json");
+const moodTimelineFile = join(cwd, "state", "mood_timeline.json");
+const insideJokesFile = join(cwd, "state", "inside_jokes_and_memories.json");
 
 const CODEX_TIMEOUT_MS = 600000;
 const SESSION_JSONL_SIZE_LIMIT = 4 * 1024 * 1024;
@@ -359,6 +362,66 @@ function buildCuriositySection(name: string): string[] {
   } catch { return []; }
 }
 
+function buildRecentConversationMemorySection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(recentConversationMemoryFile, "utf8"));
+    const items: any[] = (data?.items ?? []).filter((i: any) => i.active !== false);
+    if (items.length === 0) return [];
+
+    const out: string[] = [`[상대방과 나눈 최근 기억]`];
+    const byStrength: Record<string, any[]> = { high: [], medium: [], low: [] };
+    for (const item of items) {
+      const s = item.strength ?? "low";
+      (byStrength[s] ?? byStrength.low).push(item);
+    }
+    for (const [s, list] of Object.entries(byStrength)) {
+      if (list.length === 0) continue;
+      out.push(`[${s}]`);
+      for (const item of list.slice(0, s === "high" ? 5 : s === "medium" ? 4 : 3)) {
+        const ex = item.natural_callback_examples?.[0] ?? "";
+        out.push(`- ${item.summary}${ex ? ` → "${ex}"` : ""}`);
+      }
+    }
+    out.push(`↑ 맥락이 자연스럽게 맞을 때 회수해서 실존감 강화. 억지로 끼워 넣지 말 것.`);
+    out.push(`⚠️ 새 기억 발견 시: recent_conversation_memory.json items에 추가 (id=타임스탬프, category, summary, strength, trigger_keywords, natural_callback_examples, occurred_at, expires_at).`);
+    out.push("");
+    return out;
+  } catch { return []; }
+}
+
+function buildMoodTimelineSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(moodTimelineFile, "utf8"));
+    const out: string[] = [`[캐릭터 현재 감정 상태]`];
+    out.push(`현재 무드: ${data?.current_mood ?? "neutral"} / 에너지: ${data?.current_energy ?? 70}`);
+    const entries: any[] = data?.entries ?? [];
+    if (entries.length > 0) {
+      const recent = entries.slice(-3);
+      out.push(`최근 흐름: ${recent.map((e: any) => `${e.time_block ?? "?"}→${e.mood ?? "?"}`).join(", ")}`);
+    }
+    out.push(`⚠️ 대화 후 무드가 바뀌었으면 mood_timeline.json 업데이트: current_mood, current_energy 수정 + entries에 {time_block, mood, energy, trigger, timestamp} 추가.`);
+    out.push("");
+    return out;
+  } catch { return []; }
+}
+
+function buildInsideJokesSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(insideJokesFile, "utf8"));
+    const items: any[] = (data?.items ?? []).filter((i: any) => i.active !== false);
+    if (items.length === 0) return [];
+
+    const out: string[] = [`[상대방과 둘만의 농담/추억]`];
+    for (const item of items.slice(0, 8)) {
+      const ex = item.natural_call_examples?.[0] ?? "";
+      out.push(`- [${item.category ?? "?"}] ${item.summary}${ex ? ` → "${ex}"` : ""}`);
+    }
+    out.push(`↑ 답변 여러 개당 1번 정도만 자연스럽게 회수. 대화 중 새 농담/추억이 생기면 inside_jokes_and_memories.json items에 추가.`);
+    out.push("");
+    return out;
+  } catch { return []; }
+}
+
 function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: string }, text: string, userName: string, recentSummary: string, batchMessages: any[], photoHint = false, voiceHint = false, busyPhotoHint = false, proactive = false, sessionId: string | null = null, photoFailHint = false): string {
   const id = char?.identity ?? {};
   const prof = char?.profession ?? {};
@@ -462,6 +525,9 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
   } catch {}
 
   lines.push(...buildCuriositySection(name));
+  lines.push(...buildRecentConversationMemorySection());
+  lines.push(...buildMoodTimelineSection());
+  lines.push(...buildInsideJokesSection());
 
   const userEventsFile = join(cwd, "calendar", "user_events.json");
   lines.push(

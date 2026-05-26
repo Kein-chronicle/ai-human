@@ -1,0 +1,10 @@
+{
+  "current_block": {
+    "type": "free",
+    "label": "자유 시간",
+    "until": null,
+    "started_at": null
+  },
+  "updated_at": null,
+  "updated_by": "proactive_sender"
+}

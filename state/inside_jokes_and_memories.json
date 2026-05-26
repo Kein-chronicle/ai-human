@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_worker",
+  "purpose": "상대방과 캐릭터 사이 둘만의 농담, 추억, 반복 표현. 자연스럽게 재호출해서 친밀감 강화.",
+  "last_updated_at": null,
+  "auto_grow_from_conversation": true,
+  "items": [],
+  "candidate_categories": [
+    "common_jokes — 둘만의 농담/말장난",
+    "pet_phrases — 자주 쓰는 둘만의 표현",
+    "shared_memories — 함께 나눈 추억",
+    "recurring_routines — 반복 루틴",
+    "running_topics — 계속 이어지는 주제",
+    "comfort_phrases — 위로/안심용 반복 표현"
+  ],
+  "schema_per_item": {
+    "id": "스네이크케이스_짧은키",
+    "category": "위 categories 중 하나",
+    "summary": "한 문장 요약",
+    "trigger_keywords": ["키워드"],
+    "natural_call_examples": ["자연스럽게 회수하는 예시"],
+    "first_observed_at": "ISO날짜",
+    "last_used_at": null,
+    "use_count": 0,
+    "active": true
+  },
+  "growth_policy": {
+    "extraction_rule": "상대방이 반복 사용하는 표현, 함께 웃었던 농담, 약속·계획, 특별한 순간 등을 자동 추출. 자연스럽게 2~3번 등장하면 등록.",
+    "decay_rule": "180일 이상 use_count 안 늘면 active=false. 영구 삭제는 안 함.",
+    "max_active_items": 40,
+    "use_frequency": "한 답변에 0-1개. 너무 자주 쓰면 식상해짐."
+  }
+}

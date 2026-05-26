@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_worker",
+  "purpose": "상대방과 대화에서 회수할 만한 기억 (약속, 경험, 언급한 것들). 자연스러운 타이밍에 회수해서 실존감 강화.",
+  "last_updated_at": null,
+  "decay_policy": {
+    "fresh_window_days": 3,
+    "warm_window_days": 14,
+    "cool_window_days": 60,
+    "archive_after_days": 90,
+    "max_active_items": 60
+  },
+  "memory_strength_rules": {
+    "high": "상대방이 직접 강조 / 약속 / 감정 깊었던 순간 — 90일 유지",
+    "medium": "공유한 일상 (먹은 메뉴/갔던 장소/봤던 것) — 30일 유지",
+    "low": "사소한 언급 / 짧은 코멘트 — 7-14일 유지"
+  },
+  "items": []
+}
