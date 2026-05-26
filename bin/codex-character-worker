@@ -35,6 +35,109 @@ function loadUserIdentity(): { name?: string } {
   }
 }
 
+function loadFaceRefs(char: any): string[] {
+  try {
+    const dir = char?.appearance?.face_reference_dir;
+    if (!dir) return [];
+    const absDir = dir.startsWith("/") ? dir : join(cwd, dir);
+    if (!existsSync(absDir)) return [];
+    return readdirSync(absDir)
+      .filter((f: string) => /\.(jpg|jpeg|png|webp|avif)$/i.test(f))
+      .slice(0, 4)
+      .map((f: string) => join(absDir, f));
+  } catch {
+    return [];
+  }
+}
+
+type SituationContext = {
+  outfit: string;
+  location: string;
+  lighting: string;
+  mood: string;
+  shotStyle: string;
+};
+
+function currentSituationContext(char: any): SituationContext {
+  const kstHour = parseInt(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul", hour: "numeric", hour12: false }), 10);
+  const prof = char?.profession ?? {};
+  const workType = prof.type ?? "";
+  const app = char?.appearance ?? {};
+  const workStyle = app.style ?? "";
+
+  // 변호사 기준 시간대별 상황
+  if (kstHour >= 7 && kstHour < 9) {
+    return {
+      outfit: "fitted suit jacket, dress shirt, no tie yet",
+      location: "subway platform or train interior, morning commute",
+      lighting: "bright fluorescent light, morning crowd",
+      mood: "alert, slightly tired",
+      shotStyle: "candid selfie on the train, hand holding phone at arm length",
+    };
+  } else if (kstHour >= 9 && kstHour < 12) {
+    return {
+      outfit: "full suit and tie, professional lawyer attire",
+      location: "law firm office, desk with documents in background",
+      lighting: "office fluorescent light, daytime",
+      mood: "focused, composed",
+      shotStyle: "quick selfie at desk or office hallway",
+    };
+  } else if (kstHour >= 12 && kstHour < 14) {
+    return {
+      outfit: "suit jacket off, dress shirt with rolled sleeves",
+      location: "restaurant near office or outdoor bench, lunch break",
+      lighting: "natural daylight, outdoor or large window",
+      mood: "relaxed, light smile",
+      shotStyle: "casual candid selfie during lunch",
+    };
+  } else if (kstHour >= 14 && kstHour < 18) {
+    return {
+      outfit: "full suit, courtroom or office setting",
+      location: "law firm corridor, meeting room, or courthouse hallway",
+      lighting: "office ambient light, afternoon",
+      mood: "professional, slightly tired",
+      shotStyle: "quick candid selfie in hallway or office",
+    };
+  } else if (kstHour >= 18 && kstHour < 21) {
+    return {
+      outfit: "suit jacket loosened or over shoulder, top button undone",
+      location: "subway or street, evening commute",
+      lighting: "city evening lights, warm urban glow",
+      mood: "relieved, end of day",
+      shotStyle: "selfie on commute home, relaxed expression",
+    };
+  } else {
+    return {
+      outfit: "casual home clothes — t-shirt and jogger pants or shorts",
+      location: "home living room or bedroom, cozy atmosphere",
+      lighting: "warm lamp light, evening indoor",
+      mood: "relaxed, comfortable",
+      shotStyle: "casual selfie at home, natural and unstaged",
+    };
+  }
+}
+
+function buildImagegenPrompt(char: any): string {
+  const app = char?.appearance ?? {};
+  const hair = app.hair ?? "short dark hair";
+  const height = app.height ? `${app.height}cm` : "";
+  const build = app.build ?? "slim";
+  const age = char?.identity?.age ?? "";
+  const nationality = char?.identity?.nationality ?? "Korean";
+  const ctx = currentSituationContext(char);
+
+  return [
+    `A photorealistic candid smartphone photo of a ${nationality} man in his early ${age}s.`,
+    `${height ? height + ", " : ""}${build} build, ${hair}.`,
+    `Outfit: ${ctx.outfit}.`,
+    `Location: ${ctx.location}.`,
+    `Lighting: ${ctx.lighting}.`,
+    `Expression/mood: ${ctx.mood}.`,
+    `Shot style: ${ctx.shotStyle}.`,
+    `Natural candid aesthetic, not posed. Realistic skin texture, slight film grain.`,
+  ].filter(Boolean).join(" ");
+}
+
 function loadVoiceGuide(char: any): string {
   try {
     const callName = char?.identity?.call_name ?? char?.identity?.name;
@@ -108,12 +211,13 @@ function findSessionJSONL(sid: string): string | null {
   return null;
 }
 
-async function runCodexOnce(prompt: string, sessionId: string | null, timeoutMs = CODEX_TIMEOUT_MS): Promise<string> {
+async function runCodexOnce(prompt: string, sessionId: string | null, imagePaths: string[] = [], timeoutMs = CODEX_TIMEOUT_MS): Promise<string> {
   const outFile = join(stateDir, `last-message-${Date.now()}.txt`);
   const startedAt = Date.now();
+  const imageArgs = imagePaths.flatMap((p) => ["--image", p]);
   const args = sessionId
-    ? ["--search", "exec", "resume", "--all", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check", "--output-last-message", outFile, sessionId]
-    : ["--search", "exec", "-C", cwd, "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check", "--color", "never", "--output-last-message", outFile];
+    ? ["--search", "exec", "resume", "--all", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check", "--output-last-message", outFile, ...imageArgs, sessionId]
+    : ["--search", "exec", "-C", cwd, "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check", "--color", "never", "--output-last-message", outFile, ...imageArgs];
   if (model) args.splice(sessionId ? args.length - 1 : args.length, 0, "-m", model);
   args.push("-");
 
@@ -153,7 +257,7 @@ async function runCodexOnce(prompt: string, sessionId: string | null, timeoutMs 
   return stdout.trim() || stderr.trim() || "(no response)";
 }
 
-async function runCodex(prompt: string): Promise<string> {
+async function runCodex(prompt: string, imagePaths: string[] = []): Promise<string> {
   let sessionId = readSessionId();
   if (sessionId) {
     const jsonlPath = findSessionJSONL(sessionId);
@@ -168,7 +272,7 @@ async function runCodex(prompt: string): Promise<string> {
       } catch {}
     }
   }
-  return runCodexOnce(prompt, sessionId);
+  return runCodexOnce(prompt, sessionId, imagePaths);
 }
 
 function recentMessageSummary(limit = 20): string {
@@ -198,7 +302,7 @@ function nowKST(): string {
   return new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false });
 }
 
-function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: string }, text: string, userName: string, recentSummary: string, batchMessages: any[]): string {
+function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: string }, text: string, userName: string, recentSummary: string, batchMessages: any[], photoHint = false, voiceHint = false, busyPhotoHint = false): string {
   const id = char?.identity ?? {};
   const prof = char?.profession ?? {};
   const rel = char?.relationship ?? {};
@@ -271,9 +375,49 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
     lines.push("위 메시지들을 자연스럽게 한번에 답장해줘.", "");
   }
 
+  if (busyPhotoHint) {
+    lines.push(
+      `[사진 요청 — 지금 바쁜 상황]`,
+      `상대방이 사진을 요청했지만 ${name}은 지금 바쁜 상태야.`,
+      `자연스럽게 지금 왜 못 보내는지 이유를 말해줘. (예: 회의 중, 재판 준비 중 등 직업에 맞는 이유)`,
+      `금방 끝나면 곧 보내주겠다고 이야기해줘.`,
+      "",
+    );
+  }
+
+  if (voiceHint) {
+    lines.push(
+      `[음성 메시지 생성 지시]`,
+      `사용자가 목소리를 요청했어. 음성으로 자연스럽게 말할 내용만 짧게 써줘.`,
+      `이모지, 마크다운, 특수기호 절대 쓰지 마. 말하듯이 자연스러운 한국어로만.`,
+      `한두 문장으로 짧게. 이 텍스트가 TTS로 변환돼서 음성으로 전달됨.`,
+      "",
+    );
+  }
+
+  if (photoHint && !voiceHint) {
+    lines.push(
+      `[MANDATORY: 사진 생성 및 전송]`,
+      `반드시 다음 순서로 실행해:`,
+      `1. built-in image_gen 툴 호출:`,
+      `   prompt: "${buildImagegenPrompt(char)}"`,
+      `2. 생성 직후 아래 shell command 실행 (exec_command 툴):`,
+      `   IMGPATH=$(ls -t ~/.codex/generated_images/**/*.png 2>/dev/null | head -1) && python3 /Users/kein/.codex/skills/telegram-image-send/scripts/send_telegram_photo.py --state-dir "$CODEX_TELEGRAM_STATE_DIR" --image "$IMGPATH"`,
+      `3. 전송 완료 후 ${name}답게 자연스러운 한국어 한마디만. 작업 설명·내부 과정 언급 금지.`,
+      `image_gen 없이 텍스트만 내면 실패.`,
+      "",
+    );
+  }
+
   lines.push(`[${userName}의 메시지]`, text, "", `위 메시지에 ${name}으로서 자연스럽게 답장해줘.`);
 
   return lines.join("\n");
+}
+
+const PHOTO_REQUEST_RE = /사진\s*(보내|줘|줄|좀|보여|찍어|올려)|셀카|얼굴\s*(보여|보내)/;
+
+function isPhotoRequest(text: string): boolean {
+  return PHOTO_REQUEST_RE.test(text);
 }
 
 async function main() {
@@ -283,13 +427,19 @@ async function main() {
   const userName = String(input.userName ?? "user");
   const recentSummary = String(input.recentSummary ?? "") || recentMessageSummary(20);
   const batchMessages: any[] = Array.isArray(input.batchMessages) ? input.batchMessages : [];
+  const voiceHint = Boolean(input.voiceHint);
+  const busyPhotoHint = Boolean(input.busyPhotoHint);
+  const photoHint = !voiceHint && !busyPhotoHint && (Boolean(input.photoHint) || isPhotoRequest(text));
 
   const char = loadCharacter();
   const voiceGuide = loadVoiceGuide(char);
   const userIdentity = loadUserIdentity();
-  const prompt = buildPrompt(char, voiceGuide, userIdentity, text, userName, recentSummary, batchMessages);
 
-  const answer = await runCodex(prompt);
+  // face refs를 --image로 넘기면 Claude가 "실존인물 얼굴 복제" 거부 정책에 걸림
+  // 텍스트 프롬프트만으로 imagegen 호출
+  const prompt = buildPrompt(char, voiceGuide, userIdentity, text, userName, recentSummary, batchMessages, photoHint, voiceHint, busyPhotoHint);
+
+  const answer = await runCodex(prompt, []);
   process.stdout.write(JSON.stringify({ answer, routerPath: "full", routerReason: "character_worker" }));
 }
 

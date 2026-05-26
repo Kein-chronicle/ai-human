@@ -59,6 +59,98 @@ function readToken(): string {
   return token;
 }
 
+function readEnvValue(key: string): string {
+  try {
+    const raw = readFileSync(envFile, "utf8");
+    const line = raw.split(/\r?\n/).find((e) => e.startsWith(`${key}=`));
+    return line ? line.slice(key.length + 1).trim() : "";
+  } catch {
+    return "";
+  }
+}
+
+const VOICE_REQUEST_RE = /목소리\s*(들려|보내|해|줘|보여)|음성\s*(보내|줘|들려)|보이스|voice/i;
+const PHOTO_DIRECT_REQUEST_RE = /사진\s*(보내|줘|줄|좀|보여|찍어|올려)|셀카|얼굴\s*(보여|보내)/;
+
+function pickReferenceImage(): string | null {
+  try {
+    const char = JSON.parse(readFileSync(join(cwd, "character.json"), "utf8"));
+    const dir = char?.appearance?.face_reference_dir;
+    if (!dir) return null;
+    const absDir = dir.startsWith("/") ? dir : join(cwd, dir);
+    if (!existsSync(absDir)) return null;
+    const files = readdirSync(absDir).filter((f: string) => /\.(jpg|jpeg|png|webp|avif)$/i.test(f));
+    if (files.length === 0) return null;
+    return join(absDir, files[Math.floor(Math.random() * files.length)]);
+  } catch {
+    return null;
+  }
+}
+
+async function sendPhotoMessage(token: string, chatId: string, imagePath: string, caption: string): Promise<boolean> {
+  try {
+    const imageBytes = readFileSync(imagePath);
+    const ext = (imagePath.split(".").pop() ?? "jpg").toLowerCase();
+    const mimeMap: Record<string, string> = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", avif: "image/avif" };
+    const form = new FormData();
+    form.append("chat_id", chatId);
+    form.append("photo", new Blob([imageBytes], { type: mimeMap[ext] ?? "image/jpeg" }), `photo.${ext}`);
+    if (caption) form.append("caption", caption);
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: "POST", body: form });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.ok) {
+      console.error(`[photo] sendPhoto failed: ${JSON.stringify(json)}`);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error(`[photo] sendPhoto error: ${err}`);
+    return false;
+  }
+}
+
+async function generateElevenLabsAudio(text: string): Promise<Uint8Array | null> {
+  const apiKey = readEnvValue("ELEVENLABS_API_KEY");
+  const voiceId = readEnvValue("ELEVENLABS_VOICE_ID");
+  if (!apiKey || !voiceId) {
+    console.error("[voice] missing ELEVENLABS_API_KEY or ELEVENLABS_VOICE_ID");
+    return null;
+  }
+  try {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: "POST",
+      headers: { "xi-api-key": apiKey, "content-type": "application/json" },
+      body: JSON.stringify({ text, model_id: "eleven_multilingual_v2", voice_settings: { stability: 0.5, similarity_boost: 0.75 } }),
+    });
+    if (!res.ok) {
+      console.error(`[voice] elevenlabs error ${res.status}: ${await res.text().catch(() => "")}`);
+      return null;
+    }
+    return new Uint8Array(await res.arrayBuffer());
+  } catch (err) {
+    console.error(`[voice] elevenlabs fetch error: ${err}`);
+    return null;
+  }
+}
+
+async function sendVoiceMessage(token: string, chatId: string, audio: Uint8Array): Promise<boolean> {
+  try {
+    const form = new FormData();
+    form.append("chat_id", chatId);
+    form.append("voice", new Blob([audio], { type: "audio/mpeg" }), "voice.mp3");
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendVoice`, { method: "POST", body: form });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.ok) {
+      console.error(`[voice] sendVoice failed: ${JSON.stringify(json)}`);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error(`[voice] sendVoice error: ${err}`);
+    return false;
+  }
+}
+
 type Access = {
   dmPolicy?: "pairing" | "allowlist" | "disabled";
   allowFrom?: string[];
@@ -532,9 +624,16 @@ function looksLikeWoongbbiInternalLeak(text: string): boolean {
 // 사진 생성/전송 '작업 과정'을 답변으로 내보낸 경우 감지 (codex가 이미지 턴에서 계획·과정을 narration함).
 // 사진 자체는 스킬로 이미 전송되므로, 이 텍스트는 보내지 않고 조용히 버린다(에러 폴백도 X).
 // 강한 마커는 일반 웅삐 대화엔 거의 안 나오는 이미지 파이프라인 용어. 1개만 있어도 narration으로 본다.
+const PHOTO_DELAY_RE = /조금만\s*기다려|잠깐만\s*기다려|찍어볼게|찍어서.*보낼게|금방\s*보낼게|곧\s*보낼게|사진.*말썽|말썽이네|새로\s*찍어|다시\s*찍어|제대로\s*찍어/;
+
+function looksLikePhotoDelay(text: string): boolean {
+  return PHOTO_DELAY_RE.test(text);
+}
+
 function looksLikeImageProcessNarration(text: string): boolean {
   if (!text) return false;
-  const strong = ["레퍼런스", "프레이밍", "전면카메라", "일관성 확보", "셀카 톤", "최근 조합이랑", "구도를", "각도랑 프레이밍"];
+  const strong = ["레퍼런스", "프레이밍", "전면카메라", "일관성 확보", "셀카 톤", "최근 조합이랑", "구도를", "각도랑 프레이밍",
+    "텔레그램으로 전송했습니다", "같이 보낸 멘트는", "생성해서 텔레그램", "전송했습니다", "였습니다"];
   if (strong.some((m) => text.includes(m))) return true;
   const weak = ["컷은", "컷을", "넘길게", "붙여서 보낼", "붙여서 바로", "말투까지 붙여", "각도", "조합", "만들고 있어", "생성하고", "생성 중", "이미지로", "사진 톤"];
   let hits = 0;
@@ -1090,19 +1189,24 @@ const PHOTO_PROMISE_PATTERNS = [
   /인증샷\s*(보낼게|보내줄게)/,
 ];
 
+const URGENT_PHOTO_CONTEXT_RE = /지금|바로|금방|곧|당장/;
+
 function detectAndSavePhotoPromise(sentTexts: string[]): void {
   const combined = sentTexts.join(" ");
   for (const pat of PHOTO_PROMISE_PATTERNS) {
     const m = combined.match(pat);
     if (m) {
-      const delayMin = 5 + Math.floor(Math.random() * 16);
+      const urgent = URGENT_PHOTO_CONTEXT_RE.test(combined);
+      const delayMin = urgent
+        ? 1 + Math.floor(Math.random() * 3)   // 1~3분: "지금/바로" 류
+        : 8 + Math.floor(Math.random() * 8);   // 8~15분: 일반 약속
       const sendAfter = new Date(Date.now() + delayMin * 60 * 1000).toISOString();
       writeFileSync(
         pendingPhotoPromiseFile,
         JSON.stringify({ created_at: nowIso(), send_after: sendAfter, trigger_text: m[0], delay_minutes: delayMin, status: "pending" }, null, 2) + "\n",
         { mode: 0o600 },
       );
-      console.error(`[photo-promise] scheduled in ${delayMin}min: "${m[0]}"`);
+      console.error(`[photo-promise] scheduled in ${delayMin}min (${urgent ? "urgent" : "normal"}): "${m[0]}"`);
       return;
     }
   }
@@ -1136,7 +1240,7 @@ async function checkPendingPhotoPromise(token: string): Promise<void> {
       proactive: true,
       photoHint: true,
       intent: "promised_photo",
-      situation: `아까 상대방한테 '${trigger}'라고 말했어. 지금 실제로 사진 한 장 찍어서 보내주는 상황이야. imagegen 실행해서 사진을 보내줘.`,
+      situation: `아까 상대방한테 '${trigger}'라고 말했어. 지금 실제로 사진 한 장 찍어서 보내주는 상황이야. image_gen 실행해서 사진을 보내줘.`,
       userName: "상대방",
     });
     const answer = result.answer ?? "";
@@ -1504,14 +1608,20 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
   }
 
   const batchStartMs = Date.now();
+  const isVoiceReq = VOICE_REQUEST_RE.test(normalizedText);
+  const isPhotoDirectReq = !isVoiceReq && PHOTO_DIRECT_REQUEST_RE.test(normalizedText);
+  const selfBusyNow = isPhotoDirectReq ? isCharacterBusy(readSelfBusyState()) : false;
   try {
-    if (!muted) await telegram(token, "sendChatAction", { chat_id: chatId, action: "typing" });
+    if (!muted) await telegram(token, "sendChatAction", { chat_id: chatId, action: isVoiceReq ? "record_voice" : "typing" });
     const workerResult = await invokeModeWorker("character", {
       userName,
       text: normalizedText,
       snapshot,
       recentSummary: recentMessageSummary(),
       incomingImages: allImages,
+      voiceHint: isVoiceReq,
+      photoHint: isPhotoDirectReq && !selfBusyNow,
+      busyPhotoHint: isPhotoDirectReq && selfBusyNow,
     });
     appendResponseDecisionLog({
       decision_type: "bridge_router",
@@ -1523,20 +1633,47 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
       snapshot_reason: snapshot?.recommended_response_reason ?? null,
       snapshot_path_hint: snapshot?.recommended_response_path ?? null,
     });
+    const finalWorkerResult = workerResult;
+
     let sentParts: string[] = [];
     if (!muted) {
-      if (looksLikeWoongbbiInternalLeak(workerResult.answer)) {
+      if (looksLikeWoongbbiInternalLeak(finalWorkerResult.answer)) {
         throw new Error("character answer suppressed: internal prompt leak detected");
       }
-      if (looksLikeImageProcessNarration(workerResult.answer)) {
-        console.error(`[character-batch] suppressed image-process narration (photo already sent by skill) chat=${chatId}: ${workerResult.answer.slice(0, 120)}`);
+      if (looksLikeImageProcessNarration(finalWorkerResult.answer)) {
+        console.error(`[character-batch] suppressed image-process narration (photo sent by worker) chat=${chatId}: ${finalWorkerResult.answer.slice(0, 120)}`);
+      } else if (isVoiceReq) {
+        const audio = await generateElevenLabsAudio(finalWorkerResult.answer);
+        if (audio) {
+          const ok = await sendVoiceMessage(token, chatId, audio);
+          if (ok) {
+            console.error(`[voice] sent voice message chat=${chatId}`);
+            sentParts = [finalWorkerResult.answer];
+          } else {
+            sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
+          }
+        } else {
+          sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
+        }
+      } else if (isPhotoDirectReq && !selfBusyNow) {
+        // 사진 워커가 image_gen + send_telegram_photo.py로 직접 처리
+        // 캡션만 브릿지에서 텍스트로 전송 (사진은 워커 내부에서 이미 전송됨)
+        if (!looksLikeImageProcessNarration(finalWorkerResult.answer)) {
+          sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
+        }
       } else {
-        sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(workerResult.answer));
+        sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(finalWorkerResult.answer));
       }
     } else {
       console.error(`[telegram] muted character-batch reply suppressed chat=${chatId}`);
     }
-    if (sentParts.length > 0) logOutgoingTextParts(userName, "text", sentParts);
+    if (sentParts.length > 0) {
+      logOutgoingTextParts(userName, isVoiceReq ? "voice" : (isPhotoDirectReq && !selfBusyNow ? "photo" : "text"), sentParts);
+      detectAndSetSelfBusy(sentParts);
+      if (!isPhotoDirectReq || selfBusyNow) {
+        detectAndSavePhotoPromise(sentParts);
+      }
+    }
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error(`[character-batch] error chat=${chatId}: ${detail}`);
