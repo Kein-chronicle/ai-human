@@ -35,16 +35,27 @@ function loadUserIdentity(): { name?: string } {
   }
 }
 
+// 정면 클로즈업 우선 순서 — 캡 없음·고화질 우선
+const FACE_REF_PRIORITY = [
+  "2D5JRUEFSX_1.jpg",          // 정면 press photo, 가장 선명
+  "high.jpg",                   // 3/4 각도, 흰 셔츠, 클리어
+  "6912166_1167382_2513.jpg",  // 근접 셀카
+  "MNRTANJQMQ4DIOBTMJRDIMTDME.jpg", // 이벤트 정면
+  "20210919070032767kngh.jpg", // 셀카 (캡 있음)
+  "1522162854772687.jpg",      // 셀카 (캡 있음)
+];
+
 function loadFaceRefs(char: any): string[] {
   try {
     const dir = char?.appearance?.face_reference_dir;
     if (!dir) return [];
     const absDir = dir.startsWith("/") ? dir : join(cwd, dir);
     if (!existsSync(absDir)) return [];
-    return readdirSync(absDir)
-      .filter((f: string) => /\.(jpg|jpeg|png|webp|avif)$/i.test(f))
-      .slice(0, 4)
-      .map((f: string) => join(absDir, f));
+    const available = new Set(readdirSync(absDir).filter((f: string) => /\.(jpg|jpeg|png|webp|avif)$/i.test(f)));
+    const ordered = FACE_REF_PRIORITY.filter((f) => available.has(f)).map((f) => join(absDir, f));
+    // priority 리스트에 없는 파일은 뒤에 추가
+    const extra = [...available].filter((f) => !FACE_REF_PRIORITY.includes(f)).map((f) => join(absDir, f));
+    return [...ordered, ...extra];
   } catch {
     return [];
   }
@@ -435,7 +446,7 @@ async function main() {
   const char = loadCharacter();
   const voiceGuide = loadVoiceGuide(char);
   const userIdentity = loadUserIdentity();
-  const faceRefs = photoHint ? loadFaceRefs(char).slice(0, 2) : [];
+  const faceRefs = photoHint ? loadFaceRefs(char).slice(0, 4) : [];
 
   const prompt = buildPrompt(char, voiceGuide, userIdentity, text, userName, recentSummary, batchMessages, photoHint, voiceHint, busyPhotoHint);
 
