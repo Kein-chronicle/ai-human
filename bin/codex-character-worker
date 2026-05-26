@@ -35,6 +35,40 @@ function loadUserIdentity(): { name?: string } {
   }
 }
 
+function loadFaceRefs(char: any): string[] {
+  try {
+    const dir = char?.appearance?.face_reference_dir;
+    if (!dir) return [];
+    const absDir = dir.startsWith("/") ? dir : join(cwd, dir);
+    if (!existsSync(absDir)) return [];
+    return readdirSync(absDir)
+      .filter((f: string) => /\.(jpg|jpeg|png|webp|avif)$/i.test(f))
+      .slice(0, 4)
+      .map((f: string) => join(absDir, f));
+  } catch {
+    return [];
+  }
+}
+
+function buildImagegenPrompt(char: any): string {
+  const app = char?.appearance ?? {};
+  const hair = app.hair ?? "short dark hair";
+  const height = app.height ? `${app.height}cm` : "";
+  const build = app.build ?? "slim";
+  const style = app.style ?? "";
+  const age = char?.identity?.age ?? "";
+  const nationality = char?.identity?.nationality ?? "Korean";
+
+  return [
+    `A photorealistic photo of a ${nationality} man${age ? ` in his ${age}s` : ""}`,
+    `${height ? height + ", " : ""}${build} build, ${hair}.`,
+    style ? `Style: ${style}.` : "",
+    `The photo should look natural, like a real person's selfie or candid shot taken with a smartphone.`,
+    `Maintain the exact face identity from the reference images: same eye shape, nose, lip shape, face proportions.`,
+    `Do not interpret as a similar but different person — match the references precisely.`,
+  ].filter(Boolean).join(" ");
+}
+
 function loadVoiceGuide(char: any): string {
   try {
     const callName = char?.identity?.call_name ?? char?.identity?.name;
@@ -108,12 +142,13 @@ function findSessionJSONL(sid: string): string | null {
   return null;
 }
 
-async function runCodexOnce(prompt: string, sessionId: string | null, timeoutMs = CODEX_TIMEOUT_MS): Promise<string> {
+async function runCodexOnce(prompt: string, sessionId: string | null, imagePaths: string[] = [], timeoutMs = CODEX_TIMEOUT_MS): Promise<string> {
   const outFile = join(stateDir, `last-message-${Date.now()}.txt`);
   const startedAt = Date.now();
+  const imageArgs = imagePaths.flatMap((p) => ["--image", p]);
   const args = sessionId
-    ? ["--search", "exec", "resume", "--all", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check", "--output-last-message", outFile, sessionId]
-    : ["--search", "exec", "-C", cwd, "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check", "--color", "never", "--output-last-message", outFile];
+    ? ["--search", "exec", "resume", "--all", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check", "--output-last-message", outFile, ...imageArgs, sessionId]
+    : ["--search", "exec", "-C", cwd, "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check", "--color", "never", "--output-last-message", outFile, ...imageArgs];
   if (model) args.splice(sessionId ? args.length - 1 : args.length, 0, "-m", model);
   args.push("-");
 
@@ -153,7 +188,7 @@ async function runCodexOnce(prompt: string, sessionId: string | null, timeoutMs 
   return stdout.trim() || stderr.trim() || "(no response)";
 }
 
-async function runCodex(prompt: string): Promise<string> {
+async function runCodex(prompt: string, imagePaths: string[] = []): Promise<string> {
   let sessionId = readSessionId();
   if (sessionId) {
     const jsonlPath = findSessionJSONL(sessionId);
@@ -168,7 +203,7 @@ async function runCodex(prompt: string): Promise<string> {
       } catch {}
     }
   }
-  return runCodexOnce(prompt, sessionId);
+  return runCodexOnce(prompt, sessionId, imagePaths);
 }
 
 function recentMessageSummary(limit = 20): string {
@@ -198,7 +233,7 @@ function nowKST(): string {
   return new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false });
 }
 
-function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: string }, text: string, userName: string, recentSummary: string, batchMessages: any[]): string {
+function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: string }, text: string, userName: string, recentSummary: string, batchMessages: any[], photoHint = false): string {
   const id = char?.identity ?? {};
   const prof = char?.profession ?? {};
   const rel = char?.relationship ?? {};
@@ -271,6 +306,17 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
     lines.push("위 메시지들을 자연스럽게 한번에 답장해줘.", "");
   }
 
+  if (photoHint) {
+    lines.push(
+      `[사진 생성 지시]`,
+      `이전에 사진을 보내주겠다고 약속했어. 지금 imagegen 툴을 사용해서 사진을 생성하고 telegram으로 전송해줘.`,
+      `사진 스타일: ${buildImagegenPrompt(char)}`,
+      `레퍼런스 이미지가 첨부되어 있으니 얼굴 동일성을 유지해서 생성해줘.`,
+      `사진 생성 후 자연스러운 메시지와 함께 보내줘.`,
+      "",
+    );
+  }
+
   lines.push(`[${userName}의 메시지]`, text, "", `위 메시지에 ${name}으로서 자연스럽게 답장해줘.`);
 
   return lines.join("\n");
@@ -283,13 +329,16 @@ async function main() {
   const userName = String(input.userName ?? "user");
   const recentSummary = String(input.recentSummary ?? "") || recentMessageSummary(20);
   const batchMessages: any[] = Array.isArray(input.batchMessages) ? input.batchMessages : [];
+  const photoHint = Boolean(input.photoHint);
 
   const char = loadCharacter();
   const voiceGuide = loadVoiceGuide(char);
   const userIdentity = loadUserIdentity();
-  const prompt = buildPrompt(char, voiceGuide, userIdentity, text, userName, recentSummary, batchMessages);
 
-  const answer = await runCodex(prompt);
+  const faceRefs = photoHint ? loadFaceRefs(char) : [];
+  const prompt = buildPrompt(char, voiceGuide, userIdentity, text, userName, recentSummary, batchMessages, photoHint);
+
+  const answer = await runCodex(prompt, faceRefs);
   process.stdout.write(JSON.stringify({ answer, routerPath: "full", routerReason: "character_worker" }));
 }
 
