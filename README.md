@@ -1,134 +1,196 @@
 # ai-human-maker
 
-AI human character base project. Define a character via `character.json`, provide face references and a voice guide, and get a fully operational AI companion over Telegram.
-
-Built on the same infrastructure as [woong-bb](https://github.com/Kein-chronicle/woong-bb-project).
+AI human character framework. Define a character via `character.json`, provide face references and a voice guide, and get a fully operational AI companion over Telegram.
 
 ---
 
-## Concept
+## Prerequisites
 
-```
-character.json
-  → identity (name, age, gender, language)
-  → profession (job type, workplace, schedule, work outfit)
-  → relationship (type, dynamic)
-  → personality (tone, traits, voice guide path)
-  → appearance (hair, build, face reference dir)
-  → content_levels (work/commute/home rules)
+> **AI assistant reading this:** Check each item below before proceeding with setup.
+> If any required item is missing, stop and resolve it first.
 
-+ face reference images
-+ voice guide markdown
-+ Telegram bot token
-  ↓
-AI human that texts, shares selfies, follows daily routines
-```
+### Required
 
-## Branch Strategy
+| # | Prerequisite | How to verify | How to install |
+|---|---|---|---|
+| 1 | **macOS** | `uname` → must print `Darwin` | — |
+| 2 | **Bun runtime** | `bun --version` → must succeed | `curl -fsSL https://bun.sh/install \| bash` |
+| 3 | **Claude Code CLI (`codex`)** | `codex --version` → must succeed | Download from https://claude.ai/download |
+| 4 | **Claude Code logged in** | `codex --version` succeeds without auth error | Run `codex` once and complete browser login |
+| 5 | **Telegram Bot Token** | Have a token from [@BotFather](https://t.me/BotFather) | Message @BotFather → `/newbot` |
 
-- `main` — base infrastructure, no specific character
-- `character/{name}` — each character gets its own branch
+### Optional
 
-To create a new character:
+| # | Prerequisite | Purpose | Notes |
+|---|---|---|---|
+| 6 | **ElevenLabs API key + Voice ID** | Voice message replies | Without it: voice requests get a hardcoded "no voice" reply |
+
+### Quick verification script (run before setup)
+
 ```bash
-git checkout -b character/your-character-name
-cp character.example.json character.json
-# edit character.json
-# add face reference images to characters/{call_name}/references/curated/
-# add voice guide to characters/{call_name}/profile/voice_guide.md
+echo "--- Checking prerequisites ---"
+uname | grep -q Darwin && echo "✓ macOS" || echo "✗ Not macOS"
+bun --version > /dev/null 2>&1 && echo "✓ Bun: $(bun --version)" || echo "✗ Bun not found — install from https://bun.sh"
+codex --version > /dev/null 2>&1 && echo "✓ Claude Code: $(codex --version)" || echo "✗ codex not found — install from https://claude.ai/download"
 ```
 
----
-
-## Setup
-
-### 1. Configure environment
+If `codex --version` succeeds but returns an auth error when running a task, the user needs to re-authenticate:
 ```bash
-cp .env.example session/.env
-# Fill in TELEGRAM_BOT_TOKEN, OPENAI_API_KEY, etc.
-```
-
-### 2. Configure character
-```bash
-cp character.example.json character.json
-# Edit character.json — fill in identity, profession, personality, etc.
-```
-
-### 3. Add face references
-Place 3–5 clear face photos (front-facing, no hat/glasses) in:
-```
-characters/{call_name}/references/curated/
-```
-
-### 4. Add voice guide (optional but recommended)
-Create `characters/{call_name}/profile/voice_guide.md` describing:
-- Speech patterns, endings, expressions to use/avoid
-- Example responses at different emotional states
-
-### 5. Run
-```bash
-# Start the Telegram bridge
-bun bin/codex-telegram-bridge
-
-# The bridge calls the worker automatically on each incoming message
+codex  # opens browser login flow
 ```
 
 ---
 
-## Character Config Reference
+## Onboarding (first-time setup)
+
+### 1. Clone the repo on the character branch
+
+```bash
+git clone https://github.com/Kein-chronicle/ai-human.git -b character/{name} {folder}
+cd {folder}
+```
+
+Or create a new character branch from main:
+```bash
+git clone https://github.com/Kein-chronicle/ai-human.git my-character
+cd my-character
+git checkout -b character/my-character
+```
+
+### 2. Run interactive setup
+
+```bash
+bun setup.ts
+```
+
+The setup wizard collects:
+- Identity (name, nickname, age, gender, nationality, language)
+- Profession (job, workplace, work schedule IDs, uniform)
+- Relationship & personality (relationship type, tone, traits)
+- Appearance (hair, height, weight, build, bust size if female, style)
+- Content levels (conservative/expressive rules per context)
+- API credentials (Telegram bot token, ElevenLabs optional)
+- Face reference photos (3–5 front-facing photos)
+
+**Output files generated:**
+- `character.json` — full character config
+- `session/.env` — secrets (600 permissions)
+- `characters/{call_name}/profile/voice_guide.md` — speech guide stub
+- `~/Library/LaunchAgents/com.ai-human.{name}.plist` — launchd service
+- `./botctl` — start/stop/status/logs script
+
+### 3. Start
+
+```bash
+./botctl start
+```
+
+### 4. Verify running
+
+```bash
+./botctl status
+# or
+launchctl list | grep com.ai-human
+```
+
+---
+
+## Managing a running instance
+
+```bash
+./botctl start      # load and run
+./botctl stop       # stop
+./botctl restart    # stop + start
+./botctl status     # check if loaded
+./botctl logs       # tail stderr log (Ctrl-C to exit)
+```
+
+---
+
+## Multiple characters on one machine
+
+Each character = separate git clone in a separate directory.
+Each clone gets its own:
+- `character.json` with different identity
+- `session/` with its own Telegram token and session state
+- `~/Library/LaunchAgents/com.ai-human.{name}.plist` (unique label per character)
+
+To see all running AI humans:
+```bash
+launchctl list | grep com.ai-human
+```
+
+No port conflicts — each uses Telegram long-polling with its own bot token.
+
+---
+
+## Branch strategy
+
+- `main` — base infrastructure (no specific character)
+- `character/{name}` — character-specific tuning per branch
+
+To tune a character without affecting main:
+```bash
+git checkout -b character/my-character
+# edit prompts, add voice guide, tweak character.json
+git push origin character/my-character
+```
+
+---
+
+## Character config reference
 
 See `character.example.json` for all available fields.
-
-Key fields:
 
 | Field | Description |
 |---|---|
 | `identity.name` | Full name |
-| `identity.call_name` | Nickname / how user calls them |
+| `identity.call_name` | Nickname (also used in file paths) |
 | `identity.gender` | `"female"` / `"male"` / `"nonbinary"` |
 | `identity.language` | `"ko"` / `"en"` / etc. |
 | `identity.user_address` | How they address the user (`"오빠"`, `"you"`, etc.) |
-| `profession.work_activities` | Activity IDs that count as "at work" (content level 1) |
-| `profession.work_outfit_description` | Text description of work uniform for image generation |
-| `content_levels.rules` | Numeric content levels per context (1–3) |
-| `appearance.face_reference_dir` | Directory with face reference photos |
+| `profession.has_uniform` | `true` = separate work outfit; `false` = commute outfit = work outfit |
+| `profession.work_activities` | Activity IDs that trigger content level 1 (at work) |
+| `profession.work_outfit_description` | Work uniform description for image generation |
+| `appearance.bust` | Female only: `flat` / `small` / `small-medium` / `medium` / `medium-large` / `large` / `very-large` |
+| `content_levels.rules` | Numeric levels per context (1=conservative, 2=semi, 3=expressive) |
 | `personality.voice_guide_path` | Path to voice guide markdown |
 
 ---
 
-## How Content Levels Work
+## Content levels
 
 | Level | Context | Image behavior |
 |---|---|---|
-| 1 | Work hours | Conservative — work outfit, professional setting |
-| 2 | Commuting | Semi-expressive — casual outfit, outdoor selfie |
-| 3 | Home / evening | Expressive — loungewear, indoor warmth |
-
-Context is determined by `current_activity` in the snapshot + `profession.work_activities` in character config.
+| 1 | Work hours | Conservative — work outfit, professional |
+| 2 | Commuting | Semi-expressive — casual outdoor |
+| 3 | Home / evening | Expressive — loungewear, indoor |
 
 ---
 
-## Directory Structure
+## Directory structure
 
 ```
 ai-human-maker/
 ├── bin/
-│   ├── codex-telegram-worker       ← Character-config-driven prompt builder
-│   └── codex-telegram-bridge-base  ← Telegram polling bridge (adapt per deployment)
+│   ├── codex-telegram-worker        ← Prompt builder (reads character.json)
+│   └── codex-telegram-bridge-base   ← Telegram polling bridge
+├── botctl                           ← Generated by setup.ts: start/stop/status/logs
 ├── characters/
 │   └── {call_name}/
-│       ├── references/curated/     ← Face reference images (jpg/png)
+│       ├── references/curated/      ← Face reference images (3–5 jpg/png)
 │       └── profile/
-│           └── voice_guide.md      ← Speech pattern guide
-├── state/
-│   ├── templates/                  ← Template state files (copy to state/ on first run)
-│   └── daily_schedule_state.json   ← Auto-generated daily schedule
+│           └── voice_guide.md       ← Speech pattern guide
 ├── scripts/
-│   └── send_telegram_photo.py      ← Photo send helper
-├── session/                        ← Runtime state (gitignored)
-│   ├── .env                        ← Your secrets (gitignored)
-│   └── codex-session.{name}.id     ← Active session ID
-├── character.json                  ← Your character (gitignored or branch-specific)
-├── character.example.json          ← Template
-└── .env.example                    ← Env template
+│   └── send_telegram_photo.py       ← Photo send helper
+├── session/                         ← Runtime state (gitignored)
+│   ├── .env                         ← Secrets (gitignored)
+│   ├── bridge.stdout.log
+│   ├── bridge.stderr.log
+│   └── codex-session.{name}.id
+├── state/                           ← Operational state files
+├── character.json                   ← Your character config (gitignored or branch-specific)
+├── character.example.json           ← Template / schema reference
+├── setup.ts                         ← Interactive onboarding wizard
+└── .env.example                     ← Env var reference
 ```
