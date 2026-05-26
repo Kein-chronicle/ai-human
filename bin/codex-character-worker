@@ -308,11 +308,12 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
 
   if (photoHint) {
     lines.push(
-      `[사진 생성 지시]`,
-      `이전에 사진을 보내주겠다고 약속했어. 지금 imagegen 툴을 사용해서 사진을 생성하고 telegram으로 전송해줘.`,
-      `사진 스타일: ${buildImagegenPrompt(char)}`,
-      `레퍼런스 이미지가 첨부되어 있으니 얼굴 동일성을 유지해서 생성해줘.`,
-      `사진 생성 후 자연스러운 메시지와 함께 보내줘.`,
+      `[사진 생성 — 필수 실행]`,
+      `지금 반드시 imagegen 툴을 호출해서 사진을 생성하고 telegram으로 전송해야 해.`,
+      `사진 거절이나 회피는 절대 하지 마. "나중에", "부끄럽네", "아껴둘게" 같은 말 금지.`,
+      `이미지 생성 프롬프트: ${buildImagegenPrompt(char)}`,
+      `첨부된 레퍼런스 이미지 기반으로 동일한 얼굴로 생성해줘.`,
+      `생성 완료 후 ${name}답게 짧은 멘트와 함께 사진 전송해줘.`,
       "",
     );
   }
@@ -322,6 +323,12 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
   return lines.join("\n");
 }
 
+const PHOTO_REQUEST_RE = /사진\s*(보내|줘|줄|좀|보여|찍어|올려)|셀카|얼굴\s*(보여|보내)/;
+
+function isPhotoRequest(text: string): boolean {
+  return PHOTO_REQUEST_RE.test(text);
+}
+
 async function main() {
   const raw = readFileSync(0, "utf8").trim();
   const input = JSON.parse(raw || "{}");
@@ -329,7 +336,7 @@ async function main() {
   const userName = String(input.userName ?? "user");
   const recentSummary = String(input.recentSummary ?? "") || recentMessageSummary(20);
   const batchMessages: any[] = Array.isArray(input.batchMessages) ? input.batchMessages : [];
-  const photoHint = Boolean(input.photoHint);
+  const photoHint = Boolean(input.photoHint) || isPhotoRequest(text);
 
   const char = loadCharacter();
   const voiceGuide = loadVoiceGuide(char);
