@@ -589,7 +589,8 @@ function looksLikeWoongbbiInternalLeak(text: string): boolean {
 // 강한 마커는 일반 웅삐 대화엔 거의 안 나오는 이미지 파이프라인 용어. 1개만 있어도 narration으로 본다.
 function looksLikeImageProcessNarration(text: string): boolean {
   if (!text) return false;
-  const strong = ["레퍼런스", "프레이밍", "전면카메라", "일관성 확보", "셀카 톤", "최근 조합이랑", "구도를", "각도랑 프레이밍"];
+  const strong = ["레퍼런스", "프레이밍", "전면카메라", "일관성 확보", "셀카 톤", "최근 조합이랑", "구도를", "각도랑 프레이밍",
+    "텔레그램으로 전송했습니다", "같이 보낸 멘트는", "생성해서 텔레그램", "전송했습니다", "였습니다"];
   if (strong.some((m) => text.includes(m))) return true;
   const weak = ["컷은", "컷을", "넘길게", "붙여서 보낼", "붙여서 바로", "말투까지 붙여", "각도", "조합", "만들고 있어", "생성하고", "생성 중", "이미지로", "사진 톤"];
   let hits = 0;
