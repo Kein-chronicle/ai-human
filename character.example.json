@@ -15,12 +15,15 @@
     "type": "nurse",
     "workplace": "hospital",
     "schedule_type": "shift_work",
+    "has_uniform": true,
+    "_comment_has_uniform": "true = 근무복이 따로 있음 (스크럽 등). false = 유니폼 없음, 출퇴근 복장이 곧 근무 복장",
     "work_activities": [
       "hospital_morning_shift",
       "lunch_break",
       "hospital_afternoon_shift"
     ],
-    "work_outfit_description": "mint blue scrub top (V-neck short sleeve), matching scrub pants, white short coat optional, name badge, simple watch"
+    "work_outfit_description": "mint blue scrub top (V-neck short sleeve), matching scrub pants, white short coat optional, name badge, simple watch",
+    "_comment_work_outfit": "has_uniform=false일 경우 이 필드는 무시되고 commute_outfit이 근무 복장으로 사용됨"
   },
 
   "relationship": {

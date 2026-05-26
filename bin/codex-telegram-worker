@@ -259,14 +259,27 @@ function buildStateSection(): string[] {
 
 function buildContentLevelSection(level: number): string[] {
   const desc = char.content_levels?.description ?? "1=conservative, 2=semi-expressive, 3=expressive";
+  const prof = char.profession ?? {};
+  const hasUniform = prof.has_uniform !== false; // default true
+
+  let outfitInstruction: string;
+  if (level === 1) {
+    if (hasUniform) {
+      outfitInstruction = `근무 중: 유니폼 착용. ${prof.work_outfit_description ?? "직업 복장"}. 노출 최소.`;
+    } else {
+      // no uniform — work outfit = commute outfit
+      outfitInstruction = "근무 중 (유니폼 없음): 출퇴근 복장과 동일한 사복 착용. 직장 환경에 맞게. 노출 최소.";
+    }
+  } else if (level === 2) {
+    outfitInstruction = "이동 중: 일상적인 외출 복장. 자연스러운 셀피.";
+  } else {
+    outfitInstruction = "집/저녁/프라이빗: 홈웨어·loungewear 가능. 상황에 맞는 복장.";
+  }
+
   return [
     "[content_level]",
     `현재 레벨: ${level} (${desc})`,
-    level === 1
-      ? "근무 중: 사진 생성 시 직업 복장, 근무 환경에 맞게. 노출 최소."
-      : level === 2
-      ? "이동 중: 일상적인 외출 복장. 자연스러운 셀피."
-      : "집/저녁/프라이빗: 홈웨어·loungewear 가능. 상황에 맞는 복장.",
+    outfitInstruction,
     "",
   ];
 }
