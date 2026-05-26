@@ -43,7 +43,10 @@
   "appearance": {
     "hair": "long dark wavy hair",
     "height": "163cm",
+    "weight": "50kg",
     "build": "slim",
+    "bust": "small-medium",
+    "_comment_bust": "Female only. Used in image generation prompts. Values: flat / small / small-medium / medium / medium-large / large / very-large",
     "style": "feminine_casual",
     "face_reference_dir": "characters/{call_name}/references/curated"
   },

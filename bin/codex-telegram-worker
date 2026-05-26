@@ -257,6 +257,39 @@ function buildStateSection(): string[] {
   return lines;
 }
 
+const BUST_PROMPT_MAP: Record<string, string> = {
+  "flat": "flat chest",
+  "small": "small bust",
+  "small-medium": "small to medium bust",
+  "medium": "medium bust",
+  "medium-large": "medium to large bust",
+  "large": "large bust",
+  "very-large": "very large bust, voluptuous",
+};
+
+function buildAppearanceSection(): string[] {
+  const ap = char.appearance ?? {};
+  const gender = char.identity?.gender ?? "";
+  const parts: string[] = [];
+
+  if (ap.hair) parts.push(`hair: ${ap.hair}`);
+  if (ap.height) parts.push(`height: ${ap.height}`);
+  if (ap.weight) parts.push(`weight: ${ap.weight}`);
+  if (ap.build) parts.push(`build: ${ap.build}`);
+  if (gender === "female" && ap.bust) {
+    const bustDesc = BUST_PROMPT_MAP[ap.bust] ?? ap.bust;
+    parts.push(`bust: ${bustDesc}`);
+  }
+  if (ap.style) parts.push(`style: ${ap.style}`);
+
+  if (!parts.length) return [];
+  return [
+    "[appearance — use in imagegen prompts]",
+    parts.join(", "),
+    "",
+  ];
+}
+
 function buildContentLevelSection(level: number): string[] {
   const desc = char.content_levels?.description ?? "1=conservative, 2=semi-expressive, 3=expressive";
   const prof = char.profession ?? {};
@@ -349,6 +382,7 @@ function buildPrompt(
     `사용자를 ${char.identity?.user_address ?? "you"}라고 부른다.`,
     "",
     ...buildIdentitySection(),
+    ...buildAppearanceSection(),
     ...buildStyleSeed(snapshot, recentSummary),
     ...buildSnapshotSection(snapshot),
     `현재 시각 (KST): ${nowKstHHMM()}`,
