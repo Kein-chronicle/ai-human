@@ -8,6 +8,7 @@ import { existsSync, mkdirSync, writeFileSync, readdirSync, chmodSync } from "no
 import { join, resolve } from "node:path";
 import { homedir } from "node:os";
 import { spawnSync } from "node:child_process";
+import * as readline from "node:readline";
 
 const ROOT = import.meta.dir;
 
@@ -34,39 +35,34 @@ const printSection = (n: number, total: number, title: string) => {
   print(CYAN + BOLD + `[${n}/${total}] ${title}` + RESET);
 };
 
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
+
+function askRaw(prompt: string): Promise<string> {
+  return new Promise((resolve) => rl.question(prompt, (ans) => resolve(ans.trim())));
+}
+
 async function ask(prompt: string, defaultVal = ""): Promise<string> {
   const hint = defaultVal ? DIM + ` (${defaultVal})` + RESET : "";
-  process.stdout.write(`  ${prompt}${hint}: `);
-  for await (const line of console) {
-    const val = line.trim();
-    return val || defaultVal;
-  }
-  return defaultVal;
+  const ans = await askRaw(`  ${prompt}${hint}: `);
+  return ans || defaultVal;
 }
 
 async function askChoice(prompt: string, choices: string[], defaultVal = ""): Promise<string> {
   const hint = choices.map((c) => (c === defaultVal ? BOLD + c + RESET : c)).join("/");
-  process.stdout.write(`  ${prompt} [${hint}]: `);
-  for await (const line of console) {
-    const val = line.trim().toLowerCase();
+  while (true) {
+    const ans = await askRaw(`  ${prompt} [${hint}]: `);
+    const val = ans.toLowerCase();
     if (!val && defaultVal) return defaultVal;
     if (choices.map((c) => c.toLowerCase()).includes(val)) return val;
-    process.stdout.write(`  ${prompt} [${hint}]: `);
   }
-  return defaultVal;
 }
 
 async function askSecret(prompt: string): Promise<string> {
-  process.stdout.write(`  ${prompt}: `);
-  for await (const line of console) {
-    return line.trim();
-  }
-  return "";
+  return askRaw(`  ${prompt}: `);
 }
 
 async function pressEnter(prompt: string): Promise<void> {
-  process.stdout.write(`  ${prompt} [Enter] `);
-  for await (const _line of console) break;
+  await askRaw(`  ${prompt} [Enter] `);
 }
 
 // =============================================================================
@@ -463,7 +459,8 @@ esac
   print("");
 }
 
-main().catch((err) => {
+main().then(() => rl.close()).catch((err) => {
+  rl.close();
   console.error(RED + "Setup failed: " + err?.message + RESET);
   process.exit(1);
 });
