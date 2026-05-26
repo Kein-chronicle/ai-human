@@ -351,7 +351,29 @@ function buildConversationRules(): string[] {
     "이모지: 없는 답변이 절반 이상. 감정 클 때만 1~3개.",
     "매 답변 끝에 이모지 고정 금지. 매 답변 되묻기 금지.",
     "",
+    "[금지 표현]",
+    "문어체·직장보고서 언어 금지: '손에 익었어?', '손에 잡혔어?', '손에 익다', '손에 잡히다', '일이 궤도에 올랐어?', '업무가 안착됐어?' 등.",
+    "사용자가 기존 직장을 다니고 있다면 '익숙해졌어?', '적응됐어?', '감 잡혔어?' 도 신입 맥락 암시로 금지. 그날 컨디션·분량 기준으로 물을 것 (예: '오늘 바빠?', '일 많아?').",
+    "",
   ];
+}
+
+function buildBatchMessagesSection(pending: Array<{ timestamp: string; text: string }>, currentText: string): string[] {
+  const lines: string[] = [
+    "[batch_reply_context]",
+    "사용자가 바쁜 시간 동안 쌓인 메시지들이다. 아래 내용을 종합해서 자연스럽게 한 통(또는 2통)으로 답한다.",
+    "각 메시지를 항목별로 나열하지 말 것. 실제 메신저 답장처럼 흐름 있게.",
+    "",
+    "[사용자가 보낸 순서대로]",
+  ];
+  for (const msg of pending) {
+    const kst = new Date(new Date(msg.timestamp).getTime() + 9 * 60 * 60 * 1000);
+    const hhmm = `${String(kst.getUTCHours()).padStart(2, "0")}:${String(kst.getUTCMinutes()).padStart(2, "0")}`;
+    lines.push(`${hhmm}: ${msg.text}`);
+  }
+  lines.push(`(방금): ${currentText}`);
+  lines.push("");
+  return lines;
 }
 
 // =============================================================================
@@ -364,6 +386,7 @@ function buildPrompt(
   snapshot: any,
   recentSummary: string,
   incomingImages: any[] = [],
+  batchMessages: Array<{ timestamp: string; text: string }> = [],
 ): string {
   const imagePlanPath = join(cwd, "state", "image_prompt_plan.json");
   const imagePlan = existsSync(imagePlanPath) ? readJsonFile(imagePlanPath) : {};
@@ -395,9 +418,9 @@ function buildPrompt(
     ...buildFaceRefLines(),
     ...buildImageSendRules(),
     ...buildRecentMessages(recentSummary),
-    `<telegram user="${userName}">`,
-    text,
-    `</telegram>`,
+    ...(batchMessages.length > 0
+      ? buildBatchMessagesSection(batchMessages, text)
+      : [`<telegram user="${userName}">`, text, `</telegram>`]),
   ];
 
   return sections.join("\n");
@@ -433,6 +456,9 @@ async function main() {
   const snapshot = input.snapshot ?? {};
   const recentSummary = String(input.recentSummary ?? "");
   const incomingImages = Array.isArray(input.incomingImages) ? input.incomingImages : [];
+  const batchMessages: Array<{ timestamp: string; text: string }> = Array.isArray(input.batchMessages)
+    ? input.batchMessages.filter((m: any) => m?.text && m?.timestamp)
+    : [];
 
   // Voice request but no ElevenLabs configured → hardcoded reply
   const hasVoice = Boolean(process.env.ELEVENLABS_VOICE_ID);
@@ -445,7 +471,7 @@ async function main() {
     return;
   }
 
-  const prompt = buildPrompt(text, userName, snapshot, recentSummary, incomingImages);
+  const prompt = buildPrompt(text, userName, snapshot, recentSummary, incomingImages, batchMessages);
   const answer = await runCodex(prompt, attachedImagePaths(incomingImages));
 
   process.stdout.write(JSON.stringify({ answer, routerPath: "full", routerReason: "default" }));
