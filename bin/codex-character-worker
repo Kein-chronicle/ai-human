@@ -60,12 +60,11 @@ function buildImagegenPrompt(char: any): string {
   const nationality = char?.identity?.nationality ?? "Korean";
 
   return [
-    `A photorealistic photo of a ${nationality} man${age ? ` in his ${age}s` : ""}`,
+    `A photorealistic candid smartphone photo of a ${nationality} man${age ? ` in his early ${age}s` : ""}.`,
     `${height ? height + ", " : ""}${build} build, ${hair}.`,
-    style ? `Style: ${style}.` : "",
-    `The photo should look natural, like a real person's selfie or candid shot taken with a smartphone.`,
-    `Maintain the exact face identity from the reference images: same eye shape, nose, lip shape, face proportions.`,
-    `Do not interpret as a similar but different person — match the references precisely.`,
+    style ? `${style}.` : "",
+    `Natural selfie or candid shot aesthetic. Soft indoor lighting.`,
+    `Maintain consistent look and vibe with the attached reference images.`,
   ].filter(Boolean).join(" ");
 }
 
@@ -321,9 +320,9 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
       `[사진 생성 — 필수 실행]`,
       `지금 반드시 imagegen 툴을 호출해서 사진을 생성하고 telegram으로 전송해야 해.`,
       `사진 거절이나 회피는 절대 하지 마. "나중에", "부끄럽네", "아껴둘게" 같은 말 금지.`,
-      `이미지 생성 프롬프트: ${buildImagegenPrompt(char)}`,
-      `첨부된 레퍼런스 이미지 기반으로 동일한 얼굴로 생성해줘.`,
-      `생성 완료 후 ${name}답게 짧은 멘트와 함께 사진 전송해줘.`,
+      `이미지 생성 프롬프트 (영어로 그대로 사용): ${buildImagegenPrompt(char)}`,
+      `첨부된 레퍼런스 이미지는 스타일·분위기 참고용이야. 레퍼런스와 분위기가 자연스럽게 어울리도록 생성해줘.`,
+      `생성 완료 후 ${name}답게 짧은 한국어 멘트와 함께 사진 전송해줘.`,
       "",
     );
   }
