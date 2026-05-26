@@ -42,7 +42,7 @@
     "weight": "83",
     "build": "slim",
     "style": "평소에는 캐주얼 일할때는 양복",
-    "face_reference_dir": "characters/이은우/references/curated"
+    "face_reference_dir": "characters/응우/references/curated"
   },
   "content_levels": {
     "description": "1=conservative, 2=semi-expressive, 3=expressive",
