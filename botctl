@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# botctl — manage  () AI human process
-LABEL="com.ai-human."
-PLIST="/Users/kein/Library/LaunchAgents/com.ai-human..plist"
+# botctl — manage 이은우 (응우) AI human process
+LABEL="com.ai-human.lee-eunwoo"
+PLIST="/Users/kein/Library/LaunchAgents/com.ai-human.lee-eunwoo.plist"
 
 case "$1" in
   start)
@@ -23,7 +23,7 @@ case "$1" in
     fi
     ;;
   logs)
-    tail -f "/Users/kein/Projects/ai-human-maker/session/bridge.stderr.log"
+    tail -f "/Users/kein/Projects/lee-eunwoo/session/bridge.stderr.log"
     ;;
   *)
     echo "Usage: botctl {start|stop|restart|status|logs}"

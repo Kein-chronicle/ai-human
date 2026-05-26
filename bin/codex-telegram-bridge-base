@@ -13,7 +13,7 @@ const bridgePidFile = join(stateDir, "bridge.pid");
 const bridgeStartLockFile = join(stateDir, "bridge.start.lock");
 const sessionIdFile = join(stateDir, "codex-session.id");
 const settingSessionIdFile = join(stateDir, "codex-session.setting.id");
-const woongbbiSessionIdFile = join(stateDir, "codex-session.woongbbi.id");
+const characterSessionIdFile = join(stateDir, "codex-session.character.id");
 const sessionsRoot = join(homedir(), ".codex", "sessions");
 const cwd = process.env.CODEX_TELEGRAM_CWD ?? homedir();
 const codexBin = process.env.CODEX_BIN ?? "codex";
@@ -22,6 +22,7 @@ const promptPrefix = process.env.CODEX_TELEGRAM_PROMPT_PREFIX ?? "";
 const modeStateFile = join(cwd, "state", "mode_state.json");
 const selfBusyStateFile = join(cwd, "state", "self_busy_state.json");
 const pendingIncomingFile = join(cwd, "state", "pending_incoming_messages.jsonl");
+const pendingPhotoPromiseFile = join(cwd, "state", "pending_photo_promise.json");
 const relationshipNormalizerStateFile = join(cwd, "state", "relationship_safety_normalizer_state.json");
 const settingModeAutopushScript = join(cwd, "tools", "setting_mode_autopush.py");
 const chatRuntimeSnapshotFile = join(cwd, "state", "chat_runtime_snapshot.json");
@@ -29,9 +30,9 @@ const responseDecisionLogFile = join(cwd, "state", "response_decision_log.jsonl"
 const incomingImageContextFile = join(cwd, "state", "incoming_image_context.json");
 const messagesDir = join(cwd, "messages");
 const incomingImagesDir = join(cwd, "images", "incoming");
-const woongbbiActivationChecklistFile = join(cwd, "profile", "woongbbi_activation_checklist.md");
+const characterActivationChecklistFile = join(cwd, "profile", "character_activation_checklist.md");
 const settingWorkerScript = join(homedir(), ".codex", "bin", "codex-telegram-setting-worker");
-const woongbbiWorkerScript = join(homedir(), ".codex", "bin", "codex-telegram-woongbbi-worker");
+const characterWorkerScript = join(dirname(new URL(import.meta.url).pathname), "codex-character-worker");
 const globalBridgeLockRoot = join(homedir(), ".codex", "channels", "telegram-global-locks");
 
 let globalBridgeLockFile: string | null = null;
@@ -401,7 +402,7 @@ function splitSentences(text: string): string[] {
     .filter((value): value is string => Boolean(value));
 }
 
-function woongbbiLengthPolicy(snapshot: any, sourceText: string): {
+function characterLengthPolicy(snapshot: any, sourceText: string): {
   charLimit: number;
   sentenceLimit: number;
   questionMax: number;
@@ -429,7 +430,7 @@ function woongbbiLengthPolicy(snapshot: any, sourceText: string): {
 function fitsWoongbbiLength(answer: string, snapshot: any, sourceText: string): boolean {
   const normalized = (answer || "").replace(/\r\n/g, "\n").trim();
   if (!normalized) return true;
-  const policy = woongbbiLengthPolicy(snapshot, sourceText);
+  const policy = characterLengthPolicy(snapshot, sourceText);
   const sentences = splitSentences(normalized);
   const questionCount = sentences.filter((sentence) => /[?？]/.test(sentence)).length;
   if (normalized.length > policy.charLimit) return false;
@@ -457,7 +458,7 @@ function shortenQuestionSentence(sentence: string, maxChars: number): string {
 function trimWoongbbiAnswer(answer: string, snapshot: any, sourceText: string): string {
   const normalized = (answer || "").replace(/\r\n/g, "\n").trim();
   if (!normalized) return normalized;
-  const { charLimit, sentenceLimit, questionMax, sourceHasQuestion } = woongbbiLengthPolicy(snapshot, sourceText);
+  const { charLimit, sentenceLimit, questionMax, sourceHasQuestion } = characterLengthPolicy(snapshot, sourceText);
 
   const sentences = splitSentences(normalized);
   if (sentences.length === 0) return normalized;
@@ -541,7 +542,7 @@ function looksLikeImageProcessNarration(text: string): boolean {
   return hits >= 2;
 }
 
-function woongbbiFallbackMessage(): string {
+function characterFallbackMessage(): string {
   const pool = [
     "오빠 미안ㅠ 인터넷이 잠깐 안잡혔나봐 오래 기다렸지? 방금 거 다시 말해줄래?",
     "미안해 톡이 잠깐 이상했어ㅠ 기다렸을텐데.. 방금 거 다시 한번만 말해줘",
@@ -554,11 +555,12 @@ function woongbbiFallbackMessage(): string {
 }
 
 function splitWoongbbiMessages(text: string): string[] {
-  const normalized = (text || "").replace(/\r\n/g, "\n").trim();
+  // Normalize: \r\n → \n, markdown line breaks (trailing spaces + \n) → \n
+  const normalized = (text || "").replace(/\r\n/g, "\n").replace(/  \n/g, "\n").trim();
   if (!normalized) return ["(empty response)"];
 
-  // Split on double newlines first — these are natural message-pause points
-  const paragraphs = normalized.split(/\n{2,}/).map((p) => p.replace(/\n/g, " ").replace(/\s+/g, " ").trim()).filter(Boolean);
+  // Split on any newline — each line is a separate message in casual Korean texting
+  const paragraphs = normalized.split(/\n+/).map((p) => p.replace(/\s+/g, " ").trim()).filter(Boolean);
 
   const perMessageSoftLimit = 120;
   const messages: string[] = [];
@@ -672,31 +674,31 @@ function logOutgoingTextParts(userName: string, msgType: string, parts: string[]
   }
 }
 
-function normalizeMode(raw: string | null | undefined): "setting" | "woongbbi" {
-  return raw === "woongbbi" ? "woongbbi" : "setting";
+function normalizeMode(raw: string | null | undefined): "setting" | "character" {
+  return raw === "character" ? "character" : "setting";
 }
 
-function requestedModeFromText(text: string): "setting" | "woongbbi" | null {
+function requestedModeFromText(text: string): "setting" | "character" | null {
   const trimmed = text.trim();
   if (trimmed === "/세팅온" || trimmed === "/설정온") return "setting";
-  if (trimmed === "/웅삐온") return "woongbbi";
+  if (trimmed === "/캐릭터온") return "character";
   return null;
 }
 
-function readModeState(): "setting" | "woongbbi" {
+function readModeState(): "setting" | "character" {
   try {
     const raw = JSON.parse(readFileSync(modeStateFile, "utf8"));
     return normalizeMode(raw?.current_mode);
   } catch {
-    return "setting";
+    return "character";
   }
 }
 
-function sessionFileForMode(mode: "setting" | "woongbbi"): string {
-  return mode === "woongbbi" ? woongbbiSessionIdFile : settingSessionIdFile;
+function sessionFileForMode(mode: "setting" | "character"): string {
+  return mode === "character" ? characterSessionIdFile : settingSessionIdFile;
 }
 
-function readSessionId(mode: "setting" | "woongbbi"): string | null {
+function readSessionId(mode: "setting" | "character"): string | null {
   const targetFile = sessionFileForMode(mode);
   try {
     const id = readFileSync(targetFile, "utf8").trim();
@@ -706,7 +708,7 @@ function readSessionId(mode: "setting" | "woongbbi"): string | null {
   }
 }
 
-function saveSessionId(mode: "setting" | "woongbbi", id: string): void {
+function saveSessionId(mode: "setting" | "character", id: string): void {
   const targetFile = sessionFileForMode(mode);
   writeFileSync(targetFile, `${id}\n`, { mode: 0o600 });
 }
@@ -785,7 +787,7 @@ async function collectAndLogStream(stream: ReadableStream<Uint8Array>, label: st
   return collected;
 }
 
-async function runCodex(prompt: string, mode: "setting" | "woongbbi"): Promise<string> {
+async function runCodex(prompt: string, mode: "setting" | "character"): Promise<string> {
   const outFile = join(stateDir, `last-message-${Date.now()}.txt`);
   const sessionId = readSessionId(mode);
   const startedAt = Date.now();
@@ -864,10 +866,10 @@ async function runCodex(prompt: string, mode: "setting" | "woongbbi"): Promise<s
 }
 
 async function invokeModeWorker(
-  mode: "setting" | "woongbbi",
+  mode: "setting" | "character",
   payload: Record<string, unknown>,
 ): Promise<{ answer: string; routerPath?: string; routerReason?: string }> {
-  const script = mode === "woongbbi" ? woongbbiWorkerScript : settingWorkerScript;
+  const script = mode === "character" ? characterWorkerScript : settingWorkerScript;
   const child = Bun.spawn(["bun", script], {
     stdin: "pipe",
     stdout: "pipe",
@@ -901,7 +903,7 @@ async function invokeModeWorker(
   return result;
 }
 
-async function maybeAutopushSettingMode(mode: "setting" | "woongbbi") {
+async function maybeAutopushSettingMode(mode: "setting" | "character") {
   if (mode !== "setting") return;
   if (!existsSync(settingModeAutopushScript)) return;
   const child = Bun.spawn(["python3", settingModeAutopushScript], {
@@ -919,14 +921,14 @@ async function maybeAutopushSettingMode(mode: "setting" | "woongbbi") {
   if (stderr.trim()) console.error(`[setting-autopush] ${stderr.trim()}`);
 }
 
-function triggerAutopushSettingMode(mode: "setting" | "woongbbi") {
+function triggerAutopushSettingMode(mode: "setting" | "character") {
   void maybeAutopushSettingMode(mode).catch((err) => {
     const detail = err instanceof Error ? err.message : String(err);
     console.error(`[setting-autopush] background error: ${detail}`);
   });
 }
 
-function buildPrompt(text: string, userName: string, mode: "setting" | "woongbbi"): string {
+function buildPrompt(text: string, userName: string, mode: "setting" | "character"): string {
   const common = [
     "너는 Telegram에서 들어온 요청을 처리하는 Codex 세션이다.",
     "한국어로만 답하고 사용자를 기본적으로 마스터라고 부른다.",
@@ -938,13 +940,13 @@ function buildPrompt(text: string, userName: string, mode: "setting" | "woongbbi
     mode === "setting"
       ? [
           "현재는 setting mode다.",
-          "웅삐 캐릭터 말투, 감정선, 일상 시뮬레이션, 관계 롤플레이를 시작하지 않는다.",
+          "캐릭터 말투, 감정선, 일상 시뮬레이션, 관계 롤플레이를 시작하지 않는다.",
           "설정 파일, 상태 파일, 자동화, 관제, 규칙 수정만 우선 처리한다.",
-          "웅삐모드용 참조 문서와 상태는 필요한 범위에서만 읽고, 응답은 담백한 세팅모드 톤으로 유지한다.",
+          "캐릭터모드용 참조 문서와 상태는 필요한 범위에서만 읽고, 응답은 담백한 세팅모드 톤으로 유지한다.",
         ]
       : [
-          "현재는 woongbbi mode다.",
-          "웅삐 프로필, 최근 대화 흐름, 시간대 상황을 반영해 응답한다.",
+          "현재는 character mode다.",
+          "캐릭터 프로필, 최근 대화 흐름, 시간대 상황을 반영해 응답한다.",
           "단, 설정/구조 변경 요청이 오면 직접 수정하지 말고 세팅모드 전환 필요를 먼저 알린다.",
         ];
 
@@ -956,7 +958,7 @@ function buildFastPrompt(text: string, userName: string, snapshot: any, recentSu
     "너는 Telegram에서 들어온 요청을 처리하는 Codex 세션이다.",
     "한국어로만 답하고 사용자를 기본적으로 마스터라고 부른다.",
     "답변은 Telegram으로 그대로 전송되므로 최종 사용자에게 보일 내용만 출력한다.",
-    "현재는 woongbbi mode다.",
+    "현재는 character mode다.",
     "이번 응답은 fast path다.",
     "긴 추론이나 넓은 파일 참조보다, 아래 snapshot과 최근 대화 요약만 우선 사용해 짧고 자연스럽게 답한다.",
     "애매하거나 감정적으로 무거우면 얕게 넘기지 말고 full path가 필요했을 법한 톤으로만 안전하게 답한다.",
@@ -1080,6 +1082,78 @@ function detectAndSetSelfBusy(sentTexts: string[]): void {
   console.error(`[self-busy] outgoing detected: type=${type} until=${until ?? "indefinite"}`);
 }
 
+const PHOTO_PROMISE_PATTERNS = [
+  /사진\s*(찍어서|보내줄게|보낼게|올릴게|찍을게)/,
+  /셀카\s*(찍어서|보내줄게|보낼게)/,
+  /찍어서\s*(보내줄게|보낼게)/,
+  /사진\s*올릴게/,
+  /인증샷\s*(보낼게|보내줄게)/,
+];
+
+function detectAndSavePhotoPromise(sentTexts: string[]): void {
+  const combined = sentTexts.join(" ");
+  for (const pat of PHOTO_PROMISE_PATTERNS) {
+    const m = combined.match(pat);
+    if (m) {
+      const delayMin = 5 + Math.floor(Math.random() * 16);
+      const sendAfter = new Date(Date.now() + delayMin * 60 * 1000).toISOString();
+      writeFileSync(
+        pendingPhotoPromiseFile,
+        JSON.stringify({ created_at: nowIso(), send_after: sendAfter, trigger_text: m[0], delay_minutes: delayMin, status: "pending" }, null, 2) + "\n",
+        { mode: 0o600 },
+      );
+      console.error(`[photo-promise] scheduled in ${delayMin}min: "${m[0]}"`);
+      return;
+    }
+  }
+}
+
+async function checkPendingPhotoPromise(token: string): Promise<void> {
+  if (!existsSync(pendingPhotoPromiseFile)) return;
+  let promise: any;
+  try { promise = JSON.parse(readFileSync(pendingPhotoPromiseFile, "utf8")); } catch { return; }
+  if (promise?.status !== "pending") return;
+  if (!promise?.send_after || new Date() < new Date(promise.send_after)) return;
+
+  // 하드 비지(수영/운동) 중 스킵
+  const selfBusy = readSelfBusyState();
+  if (selfBusy?.current_block?.type === "swim" || selfBusy?.current_block?.type === "exercise") return;
+
+  // 새벽 00:30~06:30 스킵
+  const { hour } = seoulDateParts();
+  if (hour < 7 || hour === 0) return;
+
+  promise.status = "sending";
+  writeFileSync(pendingPhotoPromiseFile, JSON.stringify(promise, null, 2) + "\n", { mode: 0o600 });
+
+  const trigger = promise.trigger_text ?? "사진 보내줄게";
+  const access = readAccess();
+  const chatId = (access.allowFrom ?? [])[0];
+  if (!chatId) { promise.status = "failed"; promise.error = "no_chat_id"; writeFileSync(pendingPhotoPromiseFile, JSON.stringify(promise, null, 2) + "\n", { mode: 0o600 }); return; }
+
+  try {
+    const result = await invokeModeWorker("character", {
+      proactive: true,
+      photoHint: true,
+      intent: "promised_photo",
+      situation: `아까 상대방한테 '${trigger}'라고 말했어. 지금 실제로 사진 한 장 찍어서 보내주는 상황이야. imagegen 실행해서 사진을 보내줘.`,
+      userName: "상대방",
+    });
+    const answer = result.answer ?? "";
+    if (answer && !looksLikeImageProcessNarration(answer) && !repliesMuted()) {
+      const parts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(answer));
+      if (parts.length > 0) logOutgoingTextParts("system", "photo_promise", parts);
+    }
+    promise.status = "sent";
+  } catch (err) {
+    promise.status = "failed";
+    promise.error = err instanceof Error ? err.message : String(err);
+    console.error(`[photo-promise] error: ${promise.error}`);
+  }
+  promise.resolved_at = nowIso();
+  writeFileSync(pendingPhotoPromiseFile, JSON.stringify(promise, null, 2) + "\n", { mode: 0o600 });
+}
+
 function appendMessageLog(payload: any): void {
   const { date } = seoulDateParts();
   appendJsonl(join(messagesDir, `${date}.jsonl`), payload);
@@ -1135,7 +1209,7 @@ function readModeStateFile(): any {
   };
 }
 
-function updateModeState(mode: "setting" | "woongbbi", updatedBy: string): void {
+function updateModeState(mode: "setting" | "character", updatedBy: string): void {
   const state = readModeStateFile();
   state.current_mode = mode;
   state.updated_at = nowIso();
@@ -1161,7 +1235,7 @@ async function handleModeCommand(
   text: string,
   userName: string,
   snapshot: any,
-): Promise<{ ok: boolean; mode: "setting" | "woongbbi"; reply: string; reason: string } | null> {
+): Promise<{ ok: boolean; mode: "setting" | "character"; reply: string; reason: string } | null> {
   const trimmed = text.trim();
   if (trimmed === "/세팅온" || trimmed === "/설정온") {
     updateModeState("setting", userName);
@@ -1180,10 +1254,10 @@ async function handleModeCommand(
       reason: "hard_mode_command_setting",
     };
   }
-  if (trimmed !== "/웅삐온") return null;
+  if (trimmed !== "/캐릭터온") return null;
 
   const missing = requiredWoongbbiFiles().filter((path) => !existsSync(path));
-  if (!existsSync(woongbbiActivationChecklistFile)) missing.unshift(woongbbiActivationChecklistFile);
+  if (!existsSync(characterActivationChecklistFile)) missing.unshift(characterActivationChecklistFile);
   if (missing.length > 0) {
     updateModeState("setting", userName);
     appendMessageLog({
@@ -1192,27 +1266,27 @@ async function handleModeCommand(
       telegram_user: userName,
       type: "mode_change_failed",
       mode: "setting",
-      content: `woongbbi activation blocked: missing ${missing[0]}`,
+      content: `character activation blocked: missing ${missing[0]}`,
       missing_path: missing[0],
     });
     return {
       ok: false,
       mode: "setting",
-      reply: `마스터, 웅삐모드 진입을 보류했습니다. 필수 파일을 확인하지 못했습니다: ${missing[0]}`,
-      reason: "hard_mode_command_woongbbi_missing_required_file",
+      reply: `마스터, 캐릭터모드 진입을 보류했습니다. 필수 파일을 확인하지 못했습니다: ${missing[0]}`,
+      reason: "hard_mode_command_character_missing_required_file",
     };
   }
 
-  updateModeState("woongbbi", userName);
+  updateModeState("character", userName);
   appendMessageLog({
     timestamp: nowIso(),
     direction: "system_action",
     telegram_user: userName,
     type: "mode_change",
-    mode: "woongbbi",
-    content: "mode changed to woongbbi",
+    mode: "character",
+    content: "mode changed to character",
   });
-  const activationResult = await invokeModeWorker("woongbbi", {
+  const activationResult = await invokeModeWorker("character", {
     userName,
     text: trimmed,
     snapshot,
@@ -1221,9 +1295,9 @@ async function handleModeCommand(
   });
   return {
     ok: true,
-    mode: "woongbbi",
+    mode: "character",
     reply: activationResult.answer,
-    reason: "hard_mode_command_woongbbi",
+    reason: "hard_mode_command_character",
   };
 }
 
@@ -1280,7 +1354,7 @@ function buildDirectReply(text: string, snapshot: any): string | null {
   const trimmed = text.trim();
   const normalized = trimmed.replace(/\s+/g, "").toLowerCase();
   const activity = activityHint(snapshot.current_activity);
-  if (/^(안녕|안뇽|하이|웅삐야|자기야)$/.test(trimmed)) {
+  if (/^(안녕|안뇽|하이|캐릭터야|자기야)$/.test(trimmed)) {
     return `안뇽 오빠아, 나 지금 ${activity} 있었지. 오빠는 뭐 하고 있었어?`;
   }
   if (["뭐해", "뭐해?", "뭐하고있어", "뭐하고있어?", "지금뭐해", "지금뭐해?"].includes(normalized)) {
@@ -1328,8 +1402,8 @@ function shouldNormalizeRelationshipInput(text: string): boolean {
   return riskyWords.some((word) => lower.includes(word));
 }
 
-function normalizeRelationshipInput(text: string, mode: "setting" | "woongbbi"): string {
-  if (mode !== "woongbbi") return text;
+function normalizeRelationshipInput(text: string, mode: "setting" | "character"): string {
+  if (mode !== "character") return text;
   const state = readJsonFile(relationshipNormalizerStateFile) ?? { enabled: true };
   if (state.enabled === false) return text;
   if (!shouldNormalizeRelationshipInput(text)) return text;
@@ -1362,8 +1436,8 @@ let messageQueue: Promise<void> = Promise.resolve();
 
 // === Woongbbi batch accumulator (enabled when CODEX_TELEGRAM_BATCH_WOONGBBI=1) ===
 const batchWoongbbiEnabled: boolean = Boolean(process.env.CODEX_TELEGRAM_BATCH_WOONGBBI);
-const woongbbiAccumulator: any[] = [];
-let woongbbiDraining = false;
+const characterAccumulator: any[] = [];
+let characterDraining = false;
 
 async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<void> {
   if (rawMessages.length === 0) return;
@@ -1422,17 +1496,17 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
   if (texts.length === 0) return;
   const combinedText = texts.join("\n");
   const allImages = processed.flatMap((p) => p.images);
-  const normalizedText = applyPromptPrefix(normalizeRelationshipInput(combinedText, "woongbbi"));
+  const normalizedText = applyPromptPrefix(normalizeRelationshipInput(combinedText, "character"));
   const snapshot = readChatRuntimeSnapshot();
 
   if (rawMessages.length > 1) {
-    console.error(`[woongbbi-batch] merging ${rawMessages.length} messages into one worker call`);
+    console.error(`[character-batch] merging ${rawMessages.length} messages into one worker call`);
   }
 
   const batchStartMs = Date.now();
   try {
     if (!muted) await telegram(token, "sendChatAction", { chat_id: chatId, action: "typing" });
-    const workerResult = await invokeModeWorker("woongbbi", {
+    const workerResult = await invokeModeWorker("character", {
       userName,
       text: normalizedText,
       snapshot,
@@ -1441,9 +1515,9 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
     });
     appendResponseDecisionLog({
       decision_type: "bridge_router",
-      mode: "woongbbi",
+      mode: "character",
       router_path: workerResult.routerPath ?? "full",
-      router_reason: workerResult.routerReason ?? "woongbbi_batch",
+      router_reason: workerResult.routerReason ?? "character_batch",
       text_preview: normalizedText.slice(0, 120),
       incoming_image_count: allImages.length,
       snapshot_reason: snapshot?.recommended_response_reason ?? null,
@@ -1452,26 +1526,26 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
     let sentParts: string[] = [];
     if (!muted) {
       if (looksLikeWoongbbiInternalLeak(workerResult.answer)) {
-        throw new Error("woongbbi answer suppressed: internal prompt leak detected");
+        throw new Error("character answer suppressed: internal prompt leak detected");
       }
       if (looksLikeImageProcessNarration(workerResult.answer)) {
-        console.error(`[woongbbi-batch] suppressed image-process narration (photo already sent by skill) chat=${chatId}: ${workerResult.answer.slice(0, 120)}`);
+        console.error(`[character-batch] suppressed image-process narration (photo already sent by skill) chat=${chatId}: ${workerResult.answer.slice(0, 120)}`);
       } else {
         sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(workerResult.answer));
       }
     } else {
-      console.error(`[telegram] muted woongbbi-batch reply suppressed chat=${chatId}`);
+      console.error(`[telegram] muted character-batch reply suppressed chat=${chatId}`);
     }
     if (sentParts.length > 0) logOutgoingTextParts(userName, "text", sentParts);
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
-    console.error(`[woongbbi-batch] error chat=${chatId}: ${detail}`);
+    console.error(`[character-batch] error chat=${chatId}: ${detail}`);
     if (!muted) {
       const waitedSeconds = (Date.now() - batchStartMs) / 1000;
-      let fallbackMsg = woongbbiFallbackMessage();
+      let fallbackMsg = characterFallbackMessage();
       try {
         const apologyResult = await Promise.race([
-          invokeModeWorker("woongbbi", { apologyFallback: true, waitedSeconds, userName }),
+          invokeModeWorker("character", { apologyFallback: true, waitedSeconds, userName }),
           new Promise<never>((_, reject) => setTimeout(() => reject(new Error("apology timeout")), 50000)),
         ]);
         if (apologyResult.answer) fallbackMsg = apologyResult.answer;
@@ -1485,14 +1559,14 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
 
 async function drainWoongbbiAccumulator(token: string): Promise<void> {
   try {
-    while (woongbbiAccumulator.length > 0) {
-      const batch = woongbbiAccumulator.splice(0);
+    while (characterAccumulator.length > 0) {
+      const batch = characterAccumulator.splice(0);
       await processWoongbbiBatch(token, batch);
     }
   } finally {
-    woongbbiDraining = false;
-    if (woongbbiAccumulator.length > 0) {
-      woongbbiDraining = true;
+    characterDraining = false;
+    if (characterAccumulator.length > 0) {
+      characterDraining = true;
       void drainWoongbbiAccumulator(token);
     }
   }
@@ -1581,7 +1655,7 @@ async function processMessage(token: string, message: any) {
       incoming_image_count: incomingImages.length,
     });
     if (!muted) {
-      const sentParts = await sendText(token, chatId, modeCommand.reply, { split: modeCommand.mode === "woongbbi" });
+      const sentParts = await sendText(token, chatId, modeCommand.reply, { split: modeCommand.mode === "character" });
       logOutgoingTextParts(userName, "text", sentParts);
     }
     else console.error(`[telegram] muted reply suppressed for mode-command chat=${chatId}`);
@@ -1589,8 +1663,8 @@ async function processMessage(token: string, message: any) {
     return;
   }
 
-  // ── SELF BUSY BLOCK HANDLING (woongbbi mode only) ───────────────────────────
-  if (targetMode === "woongbbi") {
+  // ── SELF BUSY BLOCK HANDLING (character mode only) ───────────────────────────
+  if (targetMode === "character") {
     const selfBusy = readSelfBusyState();
     if (isCharacterBusy(selfBusy)) {
       appendPendingIncoming({ timestamp: nowIso(), text: effectiveText, userName, messageId });
@@ -1611,12 +1685,12 @@ async function processMessage(token: string, message: any) {
     }
   }
 
-  const pendingMessages = targetMode === "woongbbi" ? flushPendingIncoming() : [];
+  const pendingMessages = targetMode === "character" ? flushPendingIncoming() : [];
 
   try {
     if (!muted) await telegram(token, "sendChatAction", { chat_id: chatId, action: "typing" });
     const workerPayload =
-      targetMode === "woongbbi"
+      targetMode === "character"
         ? {
             userName,
             text: normalizedText,
@@ -1631,11 +1705,11 @@ async function processMessage(token: string, message: any) {
             incomingImages,
           };
     let workerResult =
-      targetMode === "woongbbi"
-        ? await invokeModeWorker("woongbbi", workerPayload)
+      targetMode === "character"
+        ? await invokeModeWorker("character", workerPayload)
         : await invokeModeWorker("setting", workerPayload);
     // normalizeWoongbbiAnswerLength is now a no-op; splitting happens at send time
-    const answer = targetMode === "woongbbi" ? workerResult.answer : workerResult.answer;
+    const answer = targetMode === "character" ? workerResult.answer : workerResult.answer;
     const routerPath: "direct" | "fast" | "full" =
       workerResult.routerPath === "direct" || workerResult.routerPath === "fast" || workerResult.routerPath === "full"
         ? workerResult.routerPath
@@ -1645,7 +1719,7 @@ async function processMessage(token: string, message: any) {
         ? workerResult.routerReason
         : targetMode === "setting"
           ? "setting_mode_forced_full"
-          : "woongbbi_default_full";
+          : "character_default_full";
     appendResponseDecisionLog({
       decision_type: "bridge_router",
       mode: targetMode,
@@ -1658,15 +1732,18 @@ async function processMessage(token: string, message: any) {
     });
     let sentParts: string[] = [];
     if (!muted) {
-      if (targetMode === "woongbbi") {
+      if (targetMode === "character") {
         if (looksLikeWoongbbiInternalLeak(answer)) {
-          throw new Error("woongbbi answer suppressed: internal prompt leak detected");
+          throw new Error("character answer suppressed: internal prompt leak detected");
         }
         if (looksLikeImageProcessNarration(answer)) {
           console.error(`[telegram] suppressed image-process narration (photo already sent by skill) chat=${chatId}: ${answer.slice(0, 120)}`);
         } else {
           sentParts = await sendWoongbbiMessages(token, chatId, splitWoongbbiMessages(answer));
-          if (sentParts.length > 0) detectAndSetSelfBusy(sentParts);
+          if (sentParts.length > 0) {
+            detectAndSetSelfBusy(sentParts);
+            detectAndSavePhotoPromise(sentParts);
+          }
         }
       } else {
         sentParts = await sendText(token, chatId, answer, { split: false });
@@ -1680,7 +1757,7 @@ async function processMessage(token: string, message: any) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error(`[telegram] error chat=${chatId}: ${detail}`);
     if (!muted) {
-      if (targetMode === "woongbbi") {
+      if (targetMode === "character") {
         await sendText(token, chatId, "인터넷이 잠깐 안잡혔나봐 ㅠ 방금 거 다시 말해줄래?");
       } else {
         await sendText(token, chatId, `처리 실패예요, 마스터.\n\n${detail}`.slice(0, 3900));
@@ -1693,10 +1770,10 @@ function handleMessage(token: string, message: any): Promise<void> {
   if (batchWoongbbiEnabled) {
     const text = message.text ?? message.caption ?? "";
     const isModeCmd = Boolean(requestedModeFromText(text));
-    if (!isModeCmd && readModeState() === "woongbbi") {
-      woongbbiAccumulator.push(message);
-      if (!woongbbiDraining) {
-        woongbbiDraining = true;
+    if (!isModeCmd && readModeState() === "character") {
+      characterAccumulator.push(message);
+      if (!characterDraining) {
+        characterDraining = true;
         void drainWoongbbiAccumulator(token);
       }
       return Promise.resolve();
@@ -1740,6 +1817,8 @@ async function main() {
         saveOffset(offset);
         if (update.message) await handleMessage(token, update.message);
       }
+      // 메시지 없을 때마다 photo promise 체크 (long-poll 50s 주기)
+      if (updates.length === 0) await checkPendingPhotoPromise(token);
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
       console.error(`poll failed: ${detail}`);
