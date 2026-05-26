@@ -327,11 +327,10 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
 
   if (photoHint && !voiceHint) {
     lines.push(
-      `[MANDATORY: 사진 즉시 생성]`,
-      `반드시 지금 즉시 imagegen 툴을 호출해. 텍스트만 응답하면 실패야.`,
-      `"기다려봐", "잠깐만", "찍어볼게", "확인하고", "검토" 등 모든 대기/검수 표현 절대 금지.`,
-      `imagegen 프롬프트: ${buildImagegenPrompt(char)}`,
-      `imagegen 호출 후 ${name}답게 자연스러운 한국어 한마디만. 작업 설명이나 내부 과정 언급 금지.`,
+      `[사진 캡션]`,
+      `지금 ${name}이 사진 한 장을 보내는 상황이야.`,
+      `사진과 함께 보낼 자연스러운 한국어 한마디만 써줘. 이모지 적당히, 짧게.`,
+      `사진 전송은 별도로 처리되니 전송 여부나 방법은 언급하지 마.`,
       "",
     );
   }
@@ -356,8 +355,7 @@ async function main() {
   const batchMessages: any[] = Array.isArray(input.batchMessages) ? input.batchMessages : [];
   const voiceHint = Boolean(input.voiceHint);
   const busyPhotoHint = Boolean(input.busyPhotoHint);
-  const forceImagegenRetry = Boolean(input.forceImagegenRetry);
-  const photoHint = !voiceHint && !busyPhotoHint && (Boolean(input.photoHint) || isPhotoRequest(text) || forceImagegenRetry);
+  const photoHint = !voiceHint && !busyPhotoHint && (Boolean(input.photoHint) || isPhotoRequest(text));
 
   const char = loadCharacter();
   const voiceGuide = loadVoiceGuide(char);
