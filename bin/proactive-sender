@@ -211,6 +211,35 @@ function maybeUpdateSelfBusyState(): void {
   } catch {}
 }
 
+function maybeUpdateCharacterAppearance(): void {
+  const path = join(cwd, "state", "character_appearance_state.json");
+  const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  const h = nowKstHour();
+  let timeBlock = "night_home";
+  if (h >= 7 && h < 9) timeBlock = "morning_commute";
+  else if (h >= 9 && h < 18) timeBlock = "work_hours";
+  else if (h >= 18 && h < 21) timeBlock = "evening";
+  else if (h >= 21) timeBlock = "night_home";
+  else timeBlock = "early_morning";
+
+  let existing: any = {};
+  try { existing = JSON.parse(readFileSync(path, "utf8")); } catch {}
+  if (existing.current_date === today && existing.current_time_block === timeBlock) return;
+
+  const workOutfit = { outfit_context: "work_attire", top: "업무복", bottom: "업무복 하의", hair_state: "neat_work_style", hair_detail: "정돈된 업무 헤어", held_item: "폰 또는 서류" };
+  const homeOutfit = { outfit_context: "casual_home", top: "편한 홈웨어", bottom: "편한 하의", hair_state: "natural_loose", hair_detail: "집에서 자연스럽게 풀어진 상태", held_item: "휴대폰" };
+
+  const app = (timeBlock === "night_home" || timeBlock === "early_morning") ? homeOutfit : workOutfit;
+  writeFileSync(path, JSON.stringify({
+    schema_version: 1,
+    managed_by: "proactive_sender",
+    current_date: today,
+    current_time_block: timeBlock,
+    ...app,
+    last_updated_at: new Date(Date.now() + 9 * 3600 * 1000).toISOString(),
+  }, null, 2));
+}
+
 function maybeUpdateMediaWatchContext(): void {
   const path = join(cwd, "state", "media_watch_context.json");
   const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
@@ -588,6 +617,7 @@ async function main() {
   maybeUpdateDaySatisfaction();
   maybeUpdateReplyVariance();
   maybeUpdateDayContext();
+  maybeUpdateCharacterAppearance();
   maybeUpdateMediaWatchContext();
   maybeUpdateCharacterPresence();
   updateChatRuntimeSnapshot();

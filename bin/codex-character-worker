@@ -51,6 +51,9 @@ const eventTriggerFile = join(cwd, "state", "event_trigger_promises.json");
 const dailyDiaryFile = join(cwd, "state", "daily_diary_state.json");
 const sharedPhotoRegistryFile = join(cwd, "state", "user_shared_photo_asset_registry.json");
 const safetyNormalizerFile = join(cwd, "state", "relationship_safety_normalizer_state.json");
+const characterAppearanceFile = join(cwd, "state", "character_appearance_state.json");
+const phoneNotificationFile = join(cwd, "state", "phone_notification_pool.json");
+const mediaChoiceFile = join(cwd, "state", "media_choice_by_intent.json");
 
 const CODEX_TIMEOUT_MS = 600000;
 const SESSION_JSONL_SIZE_LIMIT = 4 * 1024 * 1024;
@@ -573,6 +576,66 @@ function buildImageContinuitySection(): string[] {
       `⚠️ 사진 전송 후 image_continuity_state.json 업데이트.`,
       "",
     ];
+  } catch { return []; }
+}
+
+function buildCharacterAppearanceSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(characterAppearanceFile, "utf8"));
+    const top = data?.top;
+    const hair = data?.hair_detail ?? data?.hair_state;
+    const held = data?.held_item;
+    const outfit = data?.outfit_context;
+    if (!top && !outfit) return [];
+    const parts: string[] = [];
+    if (top) parts.push(`상의: ${top}`);
+    if (data?.bottom) parts.push(`하의: ${data.bottom}`);
+    if (data?.outerwear) parts.push(`아우터: ${data.outerwear}`);
+    if (hair) parts.push(`헤어: ${hair}`);
+    if (held) parts.push(`들고 있는 것: ${held}`);
+    return [`[현재 외형 상태]`, parts.join(" / "), `↑ 사진 생성 시 반드시 반영. outfit_presets보다 이게 우선.`, ""];
+  } catch { return []; }
+}
+
+function buildPhoneNotificationSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(phoneNotificationFile, "utf8"));
+    const h = nowKstHour();
+    if (h >= 9 && h < 18) return [];
+    const cats = data?.categories ?? {};
+    const allItems: string[] = [];
+    for (const cat of Object.values<any>(cats)) {
+      if (Array.isArray(cat.items)) allItems.push(...cat.items);
+    }
+    if (allItems.length === 0) return [];
+    const pick = allItems[Math.floor(Math.random() * allItems.length)];
+    return [
+      `[폰 알림 — 선택적 사용]`,
+      `"${pick}"`,
+      `↑ 자연스러운 흐름에서 0~1회만. 대화 메인이 되면 안 됨.`,
+      "",
+    ];
+  } catch { return []; }
+}
+
+function buildMediaChoiceSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(mediaChoiceFile, "utf8"));
+    const weights = data?.intent_weights ?? {};
+    if (Object.keys(weights).length === 0) return [];
+    const topVoice = Object.entries<any>(weights)
+      .filter(([, v]) => v.voice >= 0.8)
+      .map(([k]) => k);
+    const topImage = Object.entries<any>(weights)
+      .filter(([, v]) => v.image >= 0.85)
+      .map(([k]) => k);
+    if (topVoice.length === 0 && topImage.length === 0) return [];
+    const out: string[] = [`[미디어 선택 가이드]`];
+    if (topVoice.length > 0) out.push(`음성 우선 상황: ${topVoice.join(", ")}`);
+    if (topImage.length > 0) out.push(`사진 우선 상황: ${topImage.join(", ")}`);
+    out.push(`↑ 해당 의도의 답변 시 미디어 타입 고려.`);
+    out.push("");
+    return out;
   } catch { return []; }
 }
 
@@ -1171,6 +1234,8 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
   lines.push(...buildConversationPatternSection());
   lines.push(...buildChatRuntimeSnapshotSection());
   lines.push(...buildTasteFrictionSection());
+  lines.push(...buildPhoneNotificationSection());
+  lines.push(...buildMediaChoiceSection());
   lines.push(...buildSignaturePhrasesSection());
   lines.push(...buildUserPreferenceSection());
   lines.push(...buildMediaProfileSection());
@@ -1178,6 +1243,7 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
   lines.push(...buildEventTriggerSection());
   lines.push(...buildCuriositySection(name));
   lines.push(...buildSharedPhotoSection());
+  lines.push(...buildCharacterAppearanceSection());
   lines.push(...buildOutfitContextSection());
   lines.push(...buildImageShotHistorySection());
   lines.push(...buildImageContinuitySection());
