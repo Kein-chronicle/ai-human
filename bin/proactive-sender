@@ -221,6 +221,73 @@ function maybeUpdateSelfBusyState(): void {
   } catch {}
 }
 
+function maybeUpdateCharacterAppearance(): void {
+  const path = join(cwd, "state", "character_appearance_state.json");
+  const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  const h = nowKstHour();
+  let timeBlock = "night_home";
+  if (h >= 7 && h < 9) timeBlock = "morning_commute";
+  else if (h >= 9 && h < 12) timeBlock = "work_morning";
+  else if (h >= 12 && h < 14) timeBlock = "lunch_break";
+  else if (h >= 14 && h < 18) timeBlock = "work_afternoon";
+  else if (h >= 18 && h < 21) timeBlock = "evening_commute";
+  else if (h >= 21) timeBlock = "night_home";
+  else timeBlock = "early_morning";
+
+  let existing: any = {};
+  try { existing = JSON.parse(readFileSync(path, "utf8")); } catch {}
+  if (existing.current_date === today && existing.current_time_block === timeBlock) return;
+
+  // 시간대별 외형 상태 (변호사 남성 기준)
+  const appearances: Record<string, object> = {
+    morning_commute: {
+      outfit_context: "commute_suit", top: "수트 재킷, 드레스 셔츠",
+      bottom: "슬랙스", footwear: "구두", outerwear: null,
+      hair_state: "neat_work_style", hair_detail: "출근 준비 완료 헤어", held_item: "가방 또는 커피",
+    },
+    work_morning: {
+      outfit_context: "full_suit", top: "수트 재킷 + 드레스 셔츠 + 타이",
+      bottom: "슬랙스", footwear: "구두", outerwear: null,
+      hair_state: "neat_work_style", hair_detail: "정돈된 업무 헤어", held_item: "서류 또는 폰",
+    },
+    lunch_break: {
+      outfit_context: "suit_jacket_off", top: "드레스 셔츠 (소매 살짝 접음)",
+      bottom: "슬랙스", footwear: "구두", outerwear: null,
+      hair_state: "neat_work_style", hair_detail: "점심 시간, 재킷 벗은 상태", held_item: "폰 또는 지갑",
+    },
+    work_afternoon: {
+      outfit_context: "full_suit", top: "수트 재킷 + 드레스 셔츠",
+      bottom: "슬랙스", footwear: "구두", outerwear: null,
+      hair_state: "neat_work_style", hair_detail: "오후 업무 중", held_item: "서류 또는 폰",
+    },
+    evening_commute: {
+      outfit_context: "suit_loosened", top: "수트 재킷 손에 들거나 어깨에, 셔츠 단추 1개 풀림",
+      bottom: "슬랙스", footwear: "구두", outerwear: null,
+      hair_state: "slightly_loosened", hair_detail: "퇴근 후 조금 풀어진 헤어", held_item: "가방 + 재킷",
+    },
+    night_home: {
+      outfit_context: "casual_home", top: "티셔츠 또는 얇은 긴팔",
+      bottom: "트레이닝 팬츠 또는 반바지", footwear: "슬리퍼", outerwear: null,
+      hair_state: "natural_loose", hair_detail: "집에서 자연스럽게 풀어진 상태", held_item: "휴대폰",
+    },
+    early_morning: {
+      outfit_context: "sleep_casual", top: "잠옷 또는 홈웨어",
+      bottom: "편한 반바지", footwear: "슬리퍼", outerwear: null,
+      hair_state: "sleep_rumpled", hair_detail: "막 일어난 헤어", held_item: "휴대폰",
+    },
+  };
+
+  const app = appearances[timeBlock] ?? appearances.night_home;
+  writeFileSync(path, JSON.stringify({
+    schema_version: 1,
+    managed_by: "proactive_sender",
+    current_date: today,
+    current_time_block: timeBlock,
+    ...app,
+    last_updated_at: new Date(Date.now() + 9 * 3600 * 1000).toISOString(),
+  }, null, 2));
+}
+
 function maybeUpdateMediaWatchContext(): void {
   const path = join(cwd, "state", "media_watch_context.json");
   const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
@@ -598,6 +665,7 @@ async function main() {
   maybeUpdateDaySatisfaction();
   maybeUpdateReplyVariance();
   maybeUpdateDayContext();
+  maybeUpdateCharacterAppearance();
   maybeUpdateMediaWatchContext();
   maybeUpdateCharacterPresence();
   updateChatRuntimeSnapshot();

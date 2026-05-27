@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_config",
+  "intent_weights": {
+    "comfort": {
+      "text": 0.7,
+      "image": 0.3,
+      "voice": 0.9
+    },
+    "quick_checkin": {
+      "text": 0.9,
+      "image": 0.1,
+      "voice": 0.3
+    },
+    "share_moment": {
+      "text": 0.4,
+      "image": 0.95,
+      "voice": 0.3
+    },
+    "good_morning": {
+      "text": 0.8,
+      "image": 0.5,
+      "voice": 0.6
+    },
+    "good_night": {
+      "text": 0.7,
+      "image": 0.4,
+      "voice": 0.85
+    },
+    "post_workout": {
+      "text": 0.5,
+      "image": 0.8,
+      "voice": 0.3
+    },
+    "lunch_share": {
+      "text": 0.5,
+      "image": 0.9,
+      "voice": 0.2
+    }
+  },
+  "notes": "의도별 미디어 타입 선택 가중치. bridge/proactive-sender가 미디어 결정 시 참고."
+}
