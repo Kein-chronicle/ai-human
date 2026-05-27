@@ -1232,7 +1232,7 @@ function hhmToMinutes(hhmm: string): number {
 
 function isCharacterBusy(state: any): boolean {
   const block = state?.current_block;
-  if (!block || block.type === "free") return false;
+  if (!block || block.type === "free" || block.type === "work") return false;
   if (!block.until) return true;
   const untilMin = hhmToMinutes(block.until);
   if (untilMin < 0) return false;
