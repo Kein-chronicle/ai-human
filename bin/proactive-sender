@@ -109,6 +109,12 @@ function toMinutes(hhmm: string): number {
   return (h || 0) * 60 + (m || 0);
 }
 
+function minutesToHhm(minutes: number): string {
+  const h = Math.floor(minutes / 60) % 24;
+  const m = minutes % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 async function maybeUpdateWeather(): Promise<void> {
   try {
     const weatherPath = join(cwd, "state", "weather_context.json");
@@ -183,13 +189,38 @@ function maybeUpdateSelfBusyState(): void {
       const arriveWorkMin = toMinutes(sched.commute_to_work?.arrive_time ?? sched.morning?.arrive_time ?? "09:00");
       const workEndMin = toMinutes(sched.commute_home?.depart_time ?? "18:00");
       const arriveHomeMin = toMinutes(sched.commute_home?.arrive_time ?? "19:30");
+      const lunchStartMin = toMinutes(sched.lunch?.time ?? "");
+      const lunchEndMin = toMinutes(sched.lunch?.end_time ?? "");
 
       if (departMin > 0 && cur >= departMin && cur < arriveWorkMin) {
         blockType = "commute"; blockLabel = "출근 중"; until = sched.commute_to_work?.arrive_time ?? "09:00";
+      } else if (lunchStartMin > 0 && lunchEndMin > 0 && cur >= lunchStartMin && cur < lunchEndMin) {
+        blockType = "free"; blockLabel = "점심 시간"; until = sched.lunch?.end_time ?? null;
       } else if (cur >= arriveWorkMin && cur < workEndMin) {
         blockType = "work"; blockLabel = "업무 중"; until = sched.commute_home?.depart_time ?? "18:00";
       } else if (cur >= workEndMin && cur < arriveHomeMin) {
         blockType = "commute"; blockLabel = "퇴근 중"; until = sched.commute_home?.arrive_time ?? "19:30";
+      }
+
+      // 재판/변론기일 하드 블록: 업무 태스크에 재판·변론 키워드가 있으면 court_hearing으로 덮어씀
+      const allTasks = [
+        ...(sched.work?.morning_tasks ?? []),
+        ...(sched.work?.afternoon_tasks ?? []),
+        ...(sched.work?.court_hearings ?? []),
+      ];
+      for (const task of allTasks) {
+        const label: string = task.task ?? task.label ?? "";
+        if (!/재판|변론기일|법원|hearings?/i.test(label)) continue;
+        const taskStart = toMinutes(task.time ?? task.start_time ?? "");
+        const taskEnd = toMinutes(task.end_time ?? "");
+        if (taskStart <= 0) continue;
+        const effectiveEnd = taskEnd > 0 ? taskEnd : taskStart + 90;
+        if (cur >= taskStart && cur < effectiveEnd) {
+          blockType = "court_hearing";
+          blockLabel = "재판 중";
+          until = taskEnd > 0 ? (task.end_time ?? null) : minutesToHhm(taskStart + 90);
+          break;
+        }
       }
 
       const exerciseStart = toMinutes(sched.evening?.start ?? "");
