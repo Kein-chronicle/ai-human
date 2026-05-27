@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_worker",
+  "last_refreshed_at": null,
+  "long_term_memory": [],
+  "notes": "대화에서 반복 등장한 패턴의 강도 점수. automation_worker 없이 Claude가 직접 업데이트."
+}

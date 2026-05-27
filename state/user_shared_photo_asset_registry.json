@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "managed_by": "bridge",
+  "asset_root": "",
+  "last_updated_at": null,
+  "assets": [],
+  "notes": "상대방이 보낸 사진 영구 레지스트리. incoming_image_context는 일회성, 이건 누적 기억."
+}
