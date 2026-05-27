@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "timezone": "Asia/Seoul",
+  "managed_by": "character_worker",
+  "last_updated_at": null,
+  "recent_phrase_counts": {},
+  "blocked_phrases": [],
+  "notes": "최근 반복된 표현을 세어 같은 문장 습관이 과하게 겹치지 않게 막는다. 워커가 답변 생성 후 사용한 표현 기록."
+}

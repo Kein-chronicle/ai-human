@@ -109,6 +109,24 @@ function toMinutes(hhmm: string): number {
   return (h || 0) * 60 + (m || 0);
 }
 
+function maybeRefreshAmbientDetails(): void {
+  try {
+    const ambientPath = join(cwd, "state", "ambient_life_events_state.json");
+    if (!existsSync(ambientPath)) return;
+    const data = JSON.parse(readFileSync(ambientPath, "utf8"));
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    if (data?.current_date === today) return;
+    const pool: any[] = data?.detail_pool ?? [];
+    if (pool.length === 0) return;
+    const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, 3);
+    data.current_date = today;
+    data.selected_persistent_details = shuffled;
+    data.last_refreshed_at = new Date().toISOString();
+    writeFileSync(ambientPath, JSON.stringify(data, null, 2) + "\n", { mode: 0o600 });
+    console.error(`[proactive] ambient details refreshed for ${today}`);
+  } catch {}
+}
+
 function maybeUpdateSelfBusyState(): void {
   try {
     const sched = readSchedule();
@@ -338,6 +356,7 @@ function checkAndWritePhotoTrigger(): void {
 async function main() {
   maybeGenerateSchedule();
   maybeUpdateSelfBusyState();
+  maybeRefreshAmbientDetails();
 
   if (existsSync(muteFlagFile)) { console.error("[proactive] muted, skip"); return; }
   if (isInQuietHours()) { console.error("[proactive] quiet hours, skip"); return; }
