@@ -187,6 +187,22 @@ function cleanVoiceText(text: string): string {
   return `${habit} ${cleaned}`;
 }
 
+function applyEmotionCarryover(vs: { stability: number; similarity_boost: number; style: number; use_speaker_boost: boolean }): typeof vs {
+  try {
+    const data = JSON.parse(readFileSync(join(cwd, "state", "carryover_emotion_for_audio.json"), "utf8"));
+    const carry = data?.base_carryover ?? {};
+    const fatigue = carry.fatigue ?? 0;
+    const softness = carry.softness ?? 0;
+    const warmth = carry.warmth ?? 0;
+    return {
+      ...vs,
+      stability: Math.min(1, Math.max(0, vs.stability + fatigue * 0.1 + softness * 0.05)),
+      similarity_boost: Math.min(1, Math.max(0, vs.similarity_boost + warmth * 0.05)),
+      style: Math.min(1, Math.max(0, vs.style - fatigue * 0.05)),
+    };
+  } catch { return vs; }
+}
+
 async function generateElevenLabsAudio(text: string): Promise<Uint8Array | null> {
   const apiKey = readEnvValue("ELEVENLABS_API_KEY");
   const voiceId = readEnvValue("ELEVENLABS_VOICE_ID");
@@ -194,7 +210,7 @@ async function generateElevenLabsAudio(text: string): Promise<Uint8Array | null>
     console.error("[voice] missing ELEVENLABS_API_KEY or ELEVENLABS_VOICE_ID");
     return null;
   }
-  const vs = loadVoiceProfile();
+  const vs = applyEmotionCarryover(loadVoiceProfile());
   const cleanText = cleanVoiceText(text);
   if (!cleanText) return null;
   try {

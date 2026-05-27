@@ -38,6 +38,12 @@ const daySatisfactionFile = join(cwd, "state", "day_satisfaction_state.json");
 const tasteFrictionFile = join(cwd, "state", "taste_friction_state.json");
 const incomingImageContextFile = join(cwd, "state", "incoming_image_context.json");
 const mediaProfileFile = join(cwd, "state", "character_media_profile.json");
+const dayContextFile = join(cwd, "state", "day_context.json");
+const chatRuntimeSnapshotFile = join(cwd, "state", "chat_runtime_snapshot.json");
+const userConversationStateFile = join(cwd, "state", "user_conversation_state.json");
+const shareEventContextFile = join(cwd, "state", "share_event_context.json");
+const outfitPresetsFile = join(cwd, "state", "character_outfit_presets.json");
+const imageShotHistoryFile = join(cwd, "state", "image_shot_history.json");
 
 const CODEX_TIMEOUT_MS = 600000;
 const SESSION_JSONL_SIZE_LIMIT = 4 * 1024 * 1024;
@@ -563,6 +569,110 @@ function buildImageContinuitySection(): string[] {
   } catch { return []; }
 }
 
+function buildDayContextSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(dayContextFile, "utf8"));
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    if (data?.date !== today) return [];
+    const out: string[] = [`[오늘 하루 컨텍스트]`];
+    if (data.day_summary_seed) out.push(data.day_summary_seed);
+    const cr = data.carry_over_from_previous_day;
+    if (cr?.emotional_residue && cr.emotional_residue !== "neutral") out.push(`전날 잔상: ${cr.emotional_residue}`);
+    const h = nowKstHour();
+    if (h >= 12 && data.morning_context?.summary) out.push(`오전: ${data.morning_context.summary}`);
+    out.push("");
+    return out;
+  } catch { return []; }
+}
+
+function buildChatRuntimeSnapshotSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(chatRuntimeSnapshotFile, "utf8"));
+    if (!data?.current_time_block) return [];
+    const out: string[] = [];
+    const blocked_o: string[] = data?.blocked_opening_styles ?? [];
+    const blocked_q: string[] = data?.blocked_question_intents ?? [];
+    const preferred: string[] = data?.preferred_next_moves ?? [];
+    const guard = data?.conversation_guard_summary ?? {};
+    if (blocked_o.length === 0 && blocked_q.length === 0 && preferred.length === 0 && !guard.waiting_reply) return [];
+    out.push(`[런타임 대화 가이드]`);
+    if (guard.waiting_reply) out.push(`현재 상대방 답장 기다리는 중`);
+    if (guard.outgoing_cooldown) out.push(`선톡 쿨다운 중`);
+    if (blocked_o.length > 0) out.push(`피할 시작 스타일: ${blocked_o.join(", ")}`);
+    if (blocked_q.length > 0) out.push(`피할 질문 의도: ${blocked_q.join(", ")}`);
+    if (preferred.length > 0) out.push(`권장 무브: ${preferred.join(", ")}`);
+    out.push("");
+    return out;
+  } catch { return []; }
+}
+
+function buildUserConversationStateSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(userConversationStateFile, "utf8"));
+    if (!data?.state_key || data.state_key === "available") return [];
+    const out: string[] = [`[상대방 현재 상태 — 실시간]`];
+    if (data.active_state_summaries?.length > 0) {
+      out.push(data.active_state_summaries.slice(0, 2).join(" / "));
+    } else {
+      out.push(data.reason ?? data.state_key);
+    }
+    if (data.followup_policy && data.followup_policy !== "default") out.push(`팔로우업: ${data.followup_policy}`);
+    if (data.tone_hint && data.tone_hint !== "neutral") out.push(`톤: ${data.tone_hint}`);
+    out.push(`⚠️ 대화 중 상태 변화 감지 시 user_conversation_state.json 업데이트.`);
+    out.push("");
+    return out;
+  } catch { return []; }
+}
+
+function buildShareEventSection(): string[] {
+  try {
+    const ctx = JSON.parse(readFileSync(shareEventContextFile, "utf8"));
+    if (!ctx?.allow_proactive_image_share) return [];
+    const lastShare = ctx.last_image_share_at;
+    if (lastShare) {
+      const cooldownMs = (ctx.image_share_cooldown_minutes ?? 30) * 60 * 1000;
+      if (Date.now() - new Date(lastShare).getTime() < cooldownMs) return [];
+    }
+    const events: string[] = ctx.preferred_photo_events ?? [];
+    if (events.length === 0) return [];
+    return [
+      `[사진 공유 기회]`,
+      `자연스러운 타이밍에 사진 먼저 보내도 됨: ${events.slice(0, 3).join(" / ")}`,
+      `↑ 대화 흐름상 어색하지 않을 때만. 쿨다운 ${ctx.image_share_cooldown_minutes ?? 30}분.`,
+      "",
+    ];
+  } catch { return []; }
+}
+
+function buildOutfitContextSection(): string[] {
+  try {
+    const presets = JSON.parse(readFileSync(outfitPresetsFile, "utf8"));
+    const h = nowKstHour();
+    let key = "night_home";
+    if (h >= 7 && h < 9) key = "morning_commute";
+    else if (h >= 9 && h < 12) key = "work_morning";
+    else if (h >= 12 && h < 14) key = "lunch_break";
+    else if (h >= 14 && h < 18) key = "work_afternoon";
+    else if (h >= 18 && h < 21) key = "evening_commute";
+    else key = "night_home";
+    const preset = presets?.presets?.[key];
+    if (!preset?.overall) return [];
+    return [`[현재 복장]`, preset.overall, `↑ 사진 생성 시 복장 일관성 유지.`, ""];
+  } catch { return []; }
+}
+
+function buildImageShotHistorySection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(imageShotHistoryFile, "utf8"));
+    const plans: any[] = data?.recent_plans ?? [];
+    if (plans.length === 0) return [];
+    const recent = plans.slice(-3);
+    const patterns = recent.map((p: any) => [p.shot_type, p.pose, p.expression].filter(Boolean).join("/")).filter(Boolean);
+    if (patterns.length === 0) return [];
+    return [`[최근 사진 패턴 — 반복 금지]`, patterns.join(" | "), ""];
+  } catch { return []; }
+}
+
 function buildCharacterPresenceSection(): string[] {
   try {
     const data = JSON.parse(readFileSync(characterPresenceFile, "utf8"));
@@ -915,6 +1025,7 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
   lines.push(...buildReplyVarianceSection());
   lines.push(...buildCharacterPresenceSection());
   lines.push(...buildDaySatisfactionSection());
+  lines.push(...buildDayContextSection());
   lines.push(...buildPersistentEnvironmentSection());
   lines.push(...buildWeatherSection());
   lines.push(...buildTodayMicroEventsSection());
@@ -922,6 +1033,7 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
   lines.push(...buildMoodResidueSection());
   lines.push(...buildWeeklyConversationSummarySection());
   lines.push(...buildRelationshipDigestSection());
+  lines.push(...buildUserConversationStateSection());
   lines.push(...buildCounterpartStateSection(knownUserName || "상대방"));
   lines.push(...buildRelationshipSection());
   lines.push(...buildRecentConversationMemorySection());
@@ -931,11 +1043,15 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
   lines.push(...buildAmbientLifeEventsSection());
   lines.push(...buildPhraseRepetitionGuardSection());
   lines.push(...buildConversationPatternSection());
+  lines.push(...buildChatRuntimeSnapshotSection());
   lines.push(...buildTasteFrictionSection());
   lines.push(...buildSignaturePhrasesSection());
   lines.push(...buildUserPreferenceSection());
   lines.push(...buildMediaProfileSection());
+  lines.push(...buildShareEventSection());
   lines.push(...buildCuriositySection(name));
+  lines.push(...buildOutfitContextSection());
+  lines.push(...buildImageShotHistorySection());
   lines.push(...buildImageContinuitySection());
   lines.push(...buildIncomingImageContextSection());
 

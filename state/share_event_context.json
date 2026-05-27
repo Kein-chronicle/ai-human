@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "managed_by": "proactive_sender",
+  "allow_proactive_image_share": true,
+  "allow_in_conversation_image_share": true,
+  "image_share_cooldown_minutes": 30,
+  "max_unanswered_shares": 1,
+  "preferred_photo_events": [
+    "work_desk_candid",
+    "lunch_food_shot",
+    "evening_commute_selfie",
+    "home_relaxing"
+  ],
+  "last_image_share_at": null,
+  "last_updated_at": null
+}

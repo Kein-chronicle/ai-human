@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_config",
+  "notes": "시간대/활동별 복장 프리셋 — 이미지 생성 일관성",
+  "presets": {
+    "morning_commute": {
+      "outfit_context": "commute_suit",
+      "top": "수트 재킷, 드레스 셔츠, 타이 없음",
+      "bottom": "슬랙스",
+      "shoes": "구두",
+      "hair_state": "neat_work_style",
+      "overall": "출근 준비 완료, 깔끔한 정장 차림"
+    },
+    "work_morning": {
+      "outfit_context": "full_suit",
+      "top": "수트 재킷 + 드레스 셔츠 + 타이",
+      "bottom": "슬랙스",
+      "shoes": "구두",
+      "hair_state": "neat_work_style",
+      "overall": "풀 정장, 업무 중"
+    },
+    "lunch_break": {
+      "outfit_context": "suit_jacket_off",
+      "top": "드레스 셔츠, 소매 살짝 접음",
+      "bottom": "슬랙스",
+      "overall": "재킷 벗은 점심 시간"
+    },
+    "work_afternoon": {
+      "outfit_context": "full_suit",
+      "top": "수트 재킷 + 드레스 셔츠",
+      "bottom": "슬랙스",
+      "overall": "오후 업무 중 풀 정장"
+    },
+    "evening_commute": {
+      "outfit_context": "suit_loosened",
+      "top": "수트 재킷 어깨에 걸치거나 손에 들고, 셔츠 상단 단추 1개 풀림",
+      "bottom": "슬랙스",
+      "overall": "퇴근 후 편안한 정장 차림"
+    },
+    "night_home": {
+      "outfit_context": "casual_home",
+      "top": "티셔츠 또는 얇은 긴팔",
+      "bottom": "트레이닝 팬츠 또는 반바지",
+      "overall": "집에서 편하게"
+    },
+    "weekend_casual": {
+      "outfit_context": "weekend_casual",
+      "top": "캐주얼 셔츠 또는 니트",
+      "bottom": "청바지 또는 면바지",
+      "overall": "주말 외출 캐주얼"
+    }
+  }
+}
