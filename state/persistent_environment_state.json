@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_worker",
+  "home_style_anchor": "캐릭터 1인 주거 공간 (캐릭터 설정에 따라 커스텀)",
+  "smartphone": {"device_family": "flagship smartphone", "body_color": "default"},
+  "usage_rule": "이미지 생성 및 배경 묘사 시 이 공간 설정과 일관성 유지."
+}

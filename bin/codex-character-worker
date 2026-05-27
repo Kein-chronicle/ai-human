@@ -27,6 +27,10 @@ const ambientLifeEventsFile = join(cwd, "state", "ambient_life_events_state.json
 const relationshipIntimacyFile = join(cwd, "state", "relationship_intimacy_state.json");
 const relationshipProgressFile = join(cwd, "state", "relationship_progress_notes.json");
 const imageContinuityFile = join(cwd, "state", "image_continuity_state.json");
+const persistentEnvFile = join(cwd, "state", "persistent_environment_state.json");
+const openLoopFile = join(cwd, "state", "open_loop_digest.json");
+const moodResidueFile = join(cwd, "state", "mood_residue_state.json");
+const relationshipDigestFile = join(cwd, "state", "relationship_context_digest.json");
 
 const CODEX_TIMEOUT_MS = 600000;
 const SESSION_JSONL_SIZE_LIMIT = 4 * 1024 * 1024;
@@ -552,6 +556,75 @@ function buildImageContinuitySection(): string[] {
   } catch { return []; }
 }
 
+function buildPersistentEnvironmentSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(persistentEnvFile, "utf8"));
+    const out: string[] = [`[캐릭터 생활 공간 앵커]`];
+    if (data?.home_style_anchor) out.push(`공간: ${data.home_style_anchor}`);
+    if (data?.smartphone) out.push(`폰: ${data.smartphone}`);
+    const bd = data?.bedroom;
+    if (bd) out.push(`침실: ${[bd.bed_type, bd.key_items?.slice(0,2).join("/")].filter(Boolean).join(", ")}`);
+    const lr = data?.living_room;
+    if (lr) out.push(`거실: ${[lr.tv, lr.couch].filter(Boolean).join(", ")}`);
+    if (out.length <= 1) return [];
+    out.push(`↑ 자연스러운 맥락에서 공간 묘사 시 활용. 직접 나열 금지.`);
+    out.push("");
+    return out;
+  } catch { return []; }
+}
+
+function buildOpenLoopSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(openLoopFile, "utf8"));
+    const out: string[] = [];
+    const waiting: any[] = data?.waiting_reply ?? [];
+    const commitments: any[] = data?.recent_self_commitments ?? [];
+    const sticky: any[] = data?.sticky_facts_to_recall ?? [];
+    if (waiting.length === 0 && commitments.length === 0 && sticky.length === 0) return [];
+    out.push(`[미결 맥락 — 자연스럽게 회수할 것]`);
+    if (waiting.length > 0) out.push(`답 기다리는 것: ${waiting.slice(0,2).map((x:any)=>x?.summary??x).join(" / ")}`);
+    if (commitments.length > 0) out.push(`약속한 것: ${commitments.slice(0,2).map((x:any)=>x?.summary??x).join(" / ")}`);
+    if (sticky.length > 0) out.push(`기억해야 할 것: ${sticky.slice(0,3).map((x:any)=>x?.fact??x).join(" / ")}`);
+    out.push(`⚠️ 완료되거나 답 받으면 open_loop_digest.json에서 해당 항목 제거.`);
+    out.push("");
+    return out;
+  } catch { return []; }
+}
+
+function buildMoodResidueSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(moodResidueFile, "utf8"));
+    const label = data?.residue_label;
+    const carry = data?.carry_ratio ?? 0;
+    if (!label || carry < 0.2) return [];
+    return [
+      `[이전 감정 잔상]`,
+      `이전 대화 감정(${data.previous_surface_mood ?? "?"})이 ${Math.round(carry * 100)}% 정도 지금에 남아있음 — ${label}`,
+      `↑ 지금 분위기에 은근히 반영. 명시적으로 언급하지 말 것.`,
+      "",
+    ];
+  } catch { return []; }
+}
+
+function buildRelationshipDigestSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(relationshipDigestFile, "utf8"));
+    const out: string[] = [];
+    const bias = data?.preference_bias;
+    const patterns = data?.affection_patterns ?? [];
+    const keys = data?.top_memory_keys ?? [];
+    if (!bias && patterns.length === 0 && keys.length === 0) return [];
+    out.push(`[관계 맥락 요약]`);
+    if (bias?.prefer_topics?.length > 0) out.push(`선호 주제: ${bias.prefer_topics.slice(0,3).join(", ")}`);
+    if (bias?.prefer_styles?.length > 0) out.push(`선호 스타일: ${bias.prefer_styles.slice(0,2).join(", ")}`);
+    if (bias?.avoid_styles?.length > 0) out.push(`피할 것: ${bias.avoid_styles.slice(0,2).join(", ")}`);
+    if (patterns.length > 0) out.push(`애정 패턴: ${patterns.slice(0,2).join(" / ")}`);
+    if (keys.length > 0) out.push(`핵심 기억: ${keys.slice(0,3).join(" / ")}`);
+    out.push("");
+    return out;
+  } catch { return []; }
+}
+
 function buildSignaturePhrasesSection(): string[] {
   try {
     const data = JSON.parse(readFileSync(join(cwd, "state", "signature_phrases.json"), "utf8"));
@@ -720,9 +793,13 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
   } catch {}
 
   lines.push(...buildChatLengthSection());
+  lines.push(...buildPersistentEnvironmentSection());
   lines.push(...buildWeatherSection());
   lines.push(...buildTodayMicroEventsSection());
+  lines.push(...buildOpenLoopSection());
+  lines.push(...buildMoodResidueSection());
   lines.push(...buildWeeklyConversationSummarySection());
+  lines.push(...buildRelationshipDigestSection());
   lines.push(...buildCounterpartStateSection(knownUserName || "상대방"));
   lines.push(...buildRelationshipSection());
   lines.push(...buildRecentConversationMemorySection());

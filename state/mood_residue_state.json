@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_worker",
+  "current_date": null,
+  "previous_surface_mood": null,
+  "current_surface_mood": "neutral",
+  "carry_ratio": 0.3,
+  "residue_label": "",
+  "last_updated_at": null,
+  "update_rule": "시간대 전환 시 직전 무드의 carry_ratio만큼 잔류. 워커가 mood_timeline.json 변경 시 이 파일도 함께 업데이트.",
+  "notes": "아침에 급했으면 오전에도 약간 급한 흔적 남김. 감정 연속성을 위한 잔류 상태."
+}
