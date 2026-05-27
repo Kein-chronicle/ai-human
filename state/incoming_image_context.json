@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "managed_by": "bridge",
+  "last_received_at": null,
+  "image_description": null,
+  "emotional_tone": null,
+  "context_tags": [],
+  "responded": true,
+  "notes": "상대방이 보낸 사진 분석 맥락 — bridge가 업데이트, worker가 반응에 활용"
+}

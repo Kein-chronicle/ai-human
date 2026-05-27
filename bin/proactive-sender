@@ -221,6 +221,89 @@ function maybeUpdateSelfBusyState(): void {
   } catch {}
 }
 
+function maybeUpdateCharacterPresence(): void {
+  const presencePath = join(cwd, "state", "character_presence.json");
+  const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  const h = nowKstHour();
+  let timeBlock = "evening";
+  if (h >= 7 && h < 9) timeBlock = "morning_commute";
+  else if (h >= 9 && h < 12) timeBlock = "work_morning";
+  else if (h >= 12 && h < 14) timeBlock = "lunch";
+  else if (h >= 14 && h < 18) timeBlock = "work_afternoon";
+  else if (h >= 18 && h < 21) timeBlock = "evening_commute";
+  else if (h >= 21) timeBlock = "night_home";
+  else timeBlock = "early_morning";
+
+  let existing: any = {};
+  try { existing = JSON.parse(readFileSync(presencePath, "utf8")); } catch {}
+  if (existing.current_date === today && existing.current_time_block === timeBlock) return;
+
+  let energy = 70;
+  if (h >= 9 && h < 13) energy = 80;
+  else if (h >= 14 && h < 17) energy = 65;
+  else if (h >= 17 && h < 20) energy = 55;
+  else if (h >= 21) energy = 50;
+  else if (h < 7) energy = 40;
+
+  let dayScore = 70;
+  try { dayScore = JSON.parse(readFileSync(join(cwd, "state", "day_satisfaction_state.json"), "utf8"))?.score ?? 70; } catch {}
+
+  const affection = Math.min(100, 70 + Math.round((dayScore - 50) * 0.3));
+  const replyTempo = h >= 9 && h < 18 ? "slow" : h >= 21 ? "relaxed" : "normal";
+
+  const validUntil = new Date(Date.now() + 9 * 3600 * 1000 + 2 * 3600 * 1000).toISOString();
+  writeFileSync(presencePath, JSON.stringify({
+    ...existing,
+    current_date: today,
+    current_time_block: timeBlock,
+    surface_mood: energy >= 75 ? "good" : energy >= 55 ? "neutral" : "tired",
+    energy_level: energy,
+    affection_level: affection,
+    care_bias: 80,
+    reply_tempo: replyTempo,
+    valid_until: validUntil,
+  }, null, 2));
+}
+
+function maybeUpdateReplyVariance(): void {
+  const path = join(cwd, "state", "reply_variance_state.json");
+  const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  const h = nowKstHour();
+  let existing: any = {};
+  try { existing = JSON.parse(readFileSync(path, "utf8")); } catch {}
+  if (existing.current_date === today) return;
+
+  const profiles = ["brief", "medium", "medium", "detailed"];
+  const profile = h >= 9 && h < 18 ? "brief" : profiles[Math.floor(Math.random() * profiles.length)];
+  const rangeMap: Record<string, [number, number]> = { brief: [1, 2], medium: [2, 4], detailed: [3, 5] };
+  writeFileSync(path, JSON.stringify({
+    ...existing,
+    current_date: today,
+    current_profile: profile,
+    target_sentence_range: rangeMap[profile],
+    punctuation_style: Math.random() > 0.5 ? "minimal" : "normal",
+    last_updated_at: new Date(Date.now() + 9 * 3600 * 1000).toISOString(),
+  }, null, 2));
+}
+
+function maybeUpdateDaySatisfaction(): void {
+  const path = join(cwd, "state", "day_satisfaction_state.json");
+  const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  let existing: any = {};
+  try { existing = JSON.parse(readFileSync(path, "utf8")); } catch {}
+  if (existing.current_date === today) return;
+
+  const score = 50 + Math.floor(Math.random() * 40);
+  const label = score >= 80 ? "good_day" : score >= 65 ? "neutral_day" : score >= 50 ? "slightly_tired" : "tired_day";
+  writeFileSync(path, JSON.stringify({
+    ...existing,
+    current_date: today,
+    score,
+    label,
+    last_updated_at: new Date(Date.now() + 9 * 3600 * 1000).toISOString(),
+  }, null, 2));
+}
+
 function maybeGenerateSchedule(): void {
   const schedPath = join(cwd, "state", "daily_schedule_state.json");
   const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
@@ -407,6 +490,9 @@ function checkAndWritePhotoTrigger(): void {
 async function main() {
   maybeGenerateSchedule();
   maybeUpdateSelfBusyState();
+  maybeUpdateDaySatisfaction();
+  maybeUpdateReplyVariance();
+  maybeUpdateCharacterPresence();
   maybeRefreshAmbientDetails();
   maybeSelectTodayEvents();
   await maybeUpdateWeather();

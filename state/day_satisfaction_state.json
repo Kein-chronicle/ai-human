@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "managed_by": "proactive_sender",
+  "current_date": "",
+  "score": 70,
+  "label": "neutral_day",
+  "last_updated_at": null,
+  "notes": "일과 만족도 압축 상태 — 대화 톤에 미세 반영"
+}

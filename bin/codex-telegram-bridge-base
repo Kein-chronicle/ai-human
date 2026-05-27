@@ -167,11 +167,28 @@ function loadVoiceProfile(): { stability: number; similarity_boost: number; styl
   }
 }
 
+function loadHabitPhrase(): string {
+  try {
+    const data = JSON.parse(readFileSync(join(cwd, "state", "voice_habit_phrases.json"), "utf8"));
+    if (!data?.enabled || !Array.isArray(data.phrases) || data.phrases.length === 0) return "";
+    const total = data.phrases.reduce((s: number, p: any) => s + (p.weight ?? 1), 0);
+    let r = Math.random() * total;
+    for (const p of data.phrases) {
+      r -= p.weight ?? 1;
+      if (r <= 0) return p.text ?? "";
+    }
+    return data.phrases[0].text ?? "";
+  } catch { return ""; }
+}
+
 function cleanVoiceText(text: string): string {
-  return text
+  const cleaned = text
     .replace(/[^가-힣㄰-㆏ᄀ-ᇿ -~\n]/g, "")
     .replace(/ㅋ+/g, "").replace(/ㅎ+/g, "").replace(/\.{2,}/g, ".").replace(/~+/g, "")
     .replace(/\s+/g, " ").trim();
+  const habit = loadHabitPhrase();
+  if (!habit || cleaned.length < 8) return cleaned;
+  return `${habit} ${cleaned}`;
 }
 
 async function generateElevenLabsAudio(text: string): Promise<Uint8Array | null> {

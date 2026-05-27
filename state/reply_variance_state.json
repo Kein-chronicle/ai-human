@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "managed_by": "proactive_sender",
+  "current_date": "",
+  "current_profile": "medium",
+  "target_sentence_range": [2, 4],
+  "punctuation_style": "normal",
+  "last_updated_at": null,
+  "notes": "시간대·컨디션에 따라 답장 길이·문장 밀도를 흔들기 위한 상태"
+}

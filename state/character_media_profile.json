@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_config",
+  "primary_platforms": ["YouTube", "Netflix", "YouTube Shorts"],
+  "preferred_youtube_categories": [
+    "legal_drama_review", "news_briefing", "sports_highlight",
+    "travel_vlog", "food_vlog", "documentary_short"
+  ],
+  "preferred_shortform_categories": [
+    "news_shorts", "sports_clips", "humor_clips", "life_hack_shorts"
+  ],
+  "preferred_ott_tones": ["legal_thriller", "action", "documentary", "crime"],
+  "current_watch": null,
+  "notes": "캐릭터 미디어 취향 — 공유 이벤트·링크 추천 시 활용"
+}

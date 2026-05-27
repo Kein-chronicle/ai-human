@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "managed_by": "proactive_sender",
+  "current_date": "",
+  "current_time_block": "",
+  "current_activity": "daily_life",
+  "surface_mood": "neutral",
+  "energy_level": 70,
+  "affection_level": 75,
+  "care_bias": 80,
+  "reply_tempo": "normal",
+  "valid_until": "",
+  "notes": "캐릭터 현재 상황 통합 상태 — self_busy_state보다 풍부한 레이어"
+}

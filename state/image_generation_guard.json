@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "managed_by": "bridge",
+  "enabled": true,
+  "active": false,
+  "owner_tag": null,
+  "ttl_seconds": 1800,
+  "acquired_at": null,
+  "last_release_at": null,
+  "last_result": null,
+  "conflict_policy": {
+    "proactive_image_send": "suppress_when_locked",
+    "direct_photo_request": "defer_with_soft_excuse"
+  },
+  "notes": "이미지 생성 중 중복 실행 방지 락"
+}

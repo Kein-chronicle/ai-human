@@ -31,6 +31,13 @@ const persistentEnvFile = join(cwd, "state", "persistent_environment_state.json"
 const openLoopFile = join(cwd, "state", "open_loop_digest.json");
 const moodResidueFile = join(cwd, "state", "mood_residue_state.json");
 const relationshipDigestFile = join(cwd, "state", "relationship_context_digest.json");
+const characterPresenceFile = join(cwd, "state", "character_presence.json");
+const conversationPatternFile = join(cwd, "state", "conversation_pattern_state.json");
+const replyVarianceFile = join(cwd, "state", "reply_variance_state.json");
+const daySatisfactionFile = join(cwd, "state", "day_satisfaction_state.json");
+const tasteFrictionFile = join(cwd, "state", "taste_friction_state.json");
+const incomingImageContextFile = join(cwd, "state", "incoming_image_context.json");
+const mediaProfileFile = join(cwd, "state", "character_media_profile.json");
 
 const CODEX_TIMEOUT_MS = 600000;
 const SESSION_JSONL_SIZE_LIMIT = 4 * 1024 * 1024;
@@ -539,6 +546,118 @@ function buildRelationshipSection(): string[] {
   } catch { return []; }
 }
 
+function buildCharacterPresenceSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(characterPresenceFile, "utf8"));
+    const now = new Date(Date.now() + 9 * 3600 * 1000).toISOString();
+    if (data?.valid_until && now > data.valid_until) return [];
+    const energy = data?.energy_level;
+    const affection = data?.affection_level;
+    const tempo = data?.reply_tempo;
+    const mood = data?.surface_mood;
+    if (!mood && !energy) return [];
+    const out: string[] = [`[캐릭터 현재 상황]`];
+    if (mood) out.push(`기분: ${mood}`);
+    if (energy !== undefined) out.push(`에너지: ${energy}/100`);
+    if (affection !== undefined) out.push(`애정: ${affection}/100`);
+    if (tempo) out.push(`답장 템포: ${tempo}`);
+    out.push("");
+    return out;
+  } catch { return []; }
+}
+
+function buildConversationPatternSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(conversationPatternFile, "utf8"));
+    const blocked_q: string[] = data?.blocked_question_intents ?? [];
+    const blocked_o: string[] = data?.blocked_opening_styles ?? [];
+    const preferred: string[] = data?.preferred_next_moves ?? [];
+    if (blocked_q.length === 0 && blocked_o.length === 0 && preferred.length === 0) return [];
+    const out: string[] = [`[대화 패턴 가이드]`];
+    if (blocked_o.length > 0) out.push(`이번엔 피할 시작 스타일: ${blocked_o.join(", ")}`);
+    if (blocked_q.length > 0) out.push(`이번엔 피할 질문 의도: ${blocked_q.join(", ")}`);
+    if (preferred.length > 0) out.push(`권장 다음 무브: ${preferred.join(", ")}`);
+    out.push(`⚠️ 선톡/답장 패턴 변화 시 conversation_pattern_state.json 업데이트.`);
+    out.push("");
+    return out;
+  } catch { return []; }
+}
+
+function buildReplyVarianceSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(replyVarianceFile, "utf8"));
+    const profile = data?.current_profile;
+    const range = data?.target_sentence_range;
+    const punct = data?.punctuation_style;
+    if (!profile) return [];
+    const parts: string[] = [`[답변 밀도 변주]`, `프로필: ${profile}`];
+    if (range) parts.push(`문장: ${range[0]}~${range[1]}개`);
+    if (punct) parts.push(`구두점: ${punct}`);
+    parts.push("");
+    return parts;
+  } catch { return []; }
+}
+
+function buildDaySatisfactionSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(daySatisfactionFile, "utf8"));
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    if (data?.current_date !== today) return [];
+    const score = data?.score;
+    const label = data?.label;
+    if (score === undefined) return [];
+    return [`[오늘 컨디션]`, `만족도: ${score}/100 (${label ?? "?"})`, `↑ 대화 톤에 은근히 반영. 명시 언급 금지.`, ""];
+  } catch { return []; }
+}
+
+function buildTasteFrictionSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(tasteFrictionFile, "utf8"));
+    const dislikes: string[] = data?.soft_dislikes ?? [];
+    const contradictions: string[] = data?.mild_contradictions ?? [];
+    if (dislikes.length === 0 && contradictions.length === 0) return [];
+    const out: string[] = [`[캐릭터 취향 결]`];
+    if (dislikes.length > 0) out.push(`미묘하게 안 맞는 것: ${dislikes.slice(0, 2).join(" / ")}`);
+    if (contradictions.length > 0) out.push(`작은 모순: ${contradictions.slice(0, 2).join(" / ")}`);
+    out.push(`↑ 자연스럽게 녹이기. 직접 나열 금지.`);
+    out.push("");
+    return out;
+  } catch { return []; }
+}
+
+function buildIncomingImageContextSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(incomingImageContextFile, "utf8"));
+    if (!data?.last_received_at || data?.responded === true) return [];
+    const desc = data?.image_description;
+    const tone = data?.emotional_tone;
+    if (!desc) return [];
+    return [
+      `[상대방이 보낸 사진]`,
+      `내용: ${desc}${tone ? ` / 분위기: ${tone}` : ""}`,
+      `↑ 사진에 자연스럽게 반응해줘. 반응 후 incoming_image_context.json responded=true로 업데이트.`,
+      "",
+    ];
+  } catch { return []; }
+}
+
+function buildMediaProfileSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(mediaProfileFile, "utf8"));
+    const platforms: string[] = data?.primary_platforms ?? [];
+    const ott: string[] = data?.preferred_ott_tones ?? [];
+    const current = data?.current_watch;
+    if (platforms.length === 0 && !current) return [];
+    const out: string[] = [`[캐릭터 미디어 취향]`];
+    if (platforms.length > 0) out.push(`주로 보는 것: ${platforms.slice(0, 3).join(", ")}`);
+    if (ott.length > 0) out.push(`OTT 장르: ${ott.slice(0, 3).join(", ")}`);
+    if (current) out.push(`요즘 보는 것: ${current}`);
+    out.push(`↑ 링크/콘텐츠 추천 시 참고.`);
+    out.push("");
+    return out;
+  } catch { return []; }
+}
+
 function buildPersistentEnvironmentSection(): string[] {
   try {
     const data = JSON.parse(readFileSync(persistentEnvFile, "utf8"));
@@ -807,6 +926,9 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
   }
 
   lines.push(...buildChatLengthSection());
+  lines.push(...buildReplyVarianceSection());
+  lines.push(...buildCharacterPresenceSection());
+  lines.push(...buildDaySatisfactionSection());
   lines.push(...buildPersistentEnvironmentSection());
   lines.push(...buildWeatherSection());
   lines.push(...buildTodayMicroEventsSection());
@@ -822,10 +944,14 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
   lines.push(...buildTimeMicroDetailSection());
   lines.push(...buildAmbientLifeEventsSection());
   lines.push(...buildPhraseRepetitionGuardSection());
+  lines.push(...buildConversationPatternSection());
+  lines.push(...buildTasteFrictionSection());
   lines.push(...buildSignaturePhrasesSection());
   lines.push(...buildUserPreferenceSection());
+  lines.push(...buildMediaProfileSection());
   lines.push(...buildCuriositySection(name));
   lines.push(...buildImageContinuitySection());
+  lines.push(...buildIncomingImageContextSection());
 
   const userEventsFile = join(cwd, "calendar", "user_events.json");
   lines.push(

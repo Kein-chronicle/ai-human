@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_config",
+  "enabled": true,
+  "phrases": [
+    {"text": "어,", "weight": 0.4},
+    {"text": "있잖아,", "weight": 0.25},
+    {"text": "음,", "weight": 0.3},
+    {"text": "아,", "weight": 0.35},
+    {"text": "근데,", "weight": 0.2}
+  ],
+  "max_insertions_per_message": 1,
+  "last_updated_at": null,
+  "notes": "TTS 음성에 삽입할 구어 표현 — 자연스러운 말투 연출"
+}
