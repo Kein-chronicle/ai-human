@@ -211,6 +211,31 @@ function maybeUpdateSelfBusyState(): void {
   } catch {}
 }
 
+function maybeUpdateMediaWatchContext(): void {
+  const path = join(cwd, "state", "media_watch_context.json");
+  const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  let existing: any = {};
+  try { existing = JSON.parse(readFileSync(path, "utf8")); } catch {}
+  if (existing.current_date === today) return;
+
+  const h = nowKstHour();
+  let timeBlock = "evening";
+  if (h >= 21) timeBlock = "night_wind_down";
+  else if (h >= 18) timeBlock = "evening";
+  else timeBlock = "daytime";
+
+  const formats = ["longform", "shorts", "news_clip"];
+  const categories = ["news_briefing", "sports_highlight", "travel_vlog", "documentary_short", "variety_clips"];
+  writeFileSync(path, JSON.stringify({
+    ...existing,
+    current_date: today,
+    current_time_block: timeBlock,
+    last_known_format: formats[Math.floor(Math.random() * formats.length)],
+    last_known_category: categories[Math.floor(Math.random() * categories.length)],
+    updated_at: new Date(Date.now() + 9 * 3600 * 1000).toISOString(),
+  }, null, 2));
+}
+
 function maybeUpdateDayContext(): void {
   const path = join(cwd, "state", "day_context.json");
   const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
@@ -563,6 +588,7 @@ async function main() {
   maybeUpdateDaySatisfaction();
   maybeUpdateReplyVariance();
   maybeUpdateDayContext();
+  maybeUpdateMediaWatchContext();
   maybeUpdateCharacterPresence();
   updateChatRuntimeSnapshot();
   maybeRefreshAmbientDetails();

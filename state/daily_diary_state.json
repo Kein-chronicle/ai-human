@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "managed_by": "proactive_sender",
+  "enabled": false,
+  "last_written_date": null,
+  "last_written_at": null,
+  "last_entry_path": null,
+  "last_status": "not_started",
+  "last_detected_mood": null,
+  "last_weather_summary": null,
+  "last_conversation_keywords": [],
+  "notes": "자기 전 일기 생성 상태 추적. enabled=true 시 23:00 이후 자동 생성."
+}

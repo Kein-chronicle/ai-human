@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_worker",
+  "purpose": "캐릭터가 매일 먹은 것, 본 것, 간 곳 누적 로그 — 다음 날 대화에서 자연 회수",
+  "last_updated_at": null,
+  "retention_days": 14,
+  "items": {
+    "consumed_food_or_drink": [],
+    "watched_ott_or_youtube": [],
+    "visited_place_or_cafe": [],
+    "listened_music": []
+  },
+  "schema_per_item": {
+    "id": "타임스탬프기반",
+    "title": "콘텐츠/장소/메뉴명",
+    "subtitle": "디테일",
+    "mood": "재밌었음/별로/좋았음 등",
+    "occurred_at": "ISO날짜",
+    "follow_up_intent": "다음에도/같이보고싶음/추천하고싶음/그냥흘려봄",
+    "callback_keywords": ["대화에서 이 키워드 나오면 자연 회수"]
+  }
+}
