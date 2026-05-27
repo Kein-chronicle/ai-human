@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "managed_by": "build_conversation_pattern_catalog",
+  "dataset_summary": {
+    "romantic_outgoing_count": 0,
+    "user_incoming_count": 0,
+    "approved_pattern_count": 0
+  },
+  "pattern_catalog": {},
+  "situation_recipes": {
+    "morning_busy_checkin": {
+      "when": "출근 전후, 바쁜 오전",
+      "shape": [
+        "soft_observation",
+        "self_update",
+        "one_light_question"
+      ],
+      "avoid_if_blocked": [
+        "current_state_check",
+        "meal_routine"
+      ]
+    },
+    "midday_soft_ping": {
+      "when": "점심 전후, 가볍게 연결 유지",
+      "shape": [
+        "thought_of_you",
+        "self_update",
+        "meal_or_energy_check"
+      ],
+      "avoid_if_blocked": [
+        "meal_routine"
+      ]
+    },
+    "after_work_comfort": {
+      "when": "퇴근길, 피곤함이 느껴질 때",
+      "shape": [
+        "soft_observation",
+        "care_offer",
+        "self_update"
+      ],
+      "avoid_if_blocked": [
+        "emotion_check"
+      ]
+    },
+    "night_wind_down": {
+      "when": "잘 준비 전, 분위기를 편하게 잇고 싶을 때",
+      "shape": [
+        "self_update",
+        "soft_question_or_affection"
+      ],
+      "avoid_if_blocked": [
+        "photo_request"
+      ]
+    }
+  },
+  "global_length_profile": {
+    "character_outgoing": {
+      "sample_count": 0,
+      "char_min": 0,
+      "char_p50": 0,
+      "char_p75": 0,
+      "char_p90": 0,
+      "sentence_p50": 0,
+      "question_ratio": 0.0
+    },
+    "user_incoming": {
+      "sample_count": 0,
+      "char_min": 0,
+      "char_p50": 0,
+      "char_p75": 0,
+      "char_p90": 0,
+      "sentence_p50": 0,
+      "question_ratio": 0.0
+    }
+  }
+}
