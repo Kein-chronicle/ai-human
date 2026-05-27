@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_worker",
+  "home_style_anchor": "강남권 1인 주거, 다크 월넛과 화이트 중심의 깔끔하고 절제된 공간",
+  "smartphone": {
+    "device_family": "slim flagship smartphone",
+    "body_color": "midnight_black",
+    "front_glass": "black_glass",
+    "screen_size_class": "6.1_inch"
+  },
+  "bedroom": {
+    "wall_color": "오프화이트",
+    "bed_frame": "다크 월넛 원목 프레임",
+    "bedding": "화이트/라이트그레이 리넨",
+    "curtain": "암막+쉬폰 이중 레이어",
+    "lighting": "침대 옆 간접등, 벽부등"
+  },
+  "living_room": {
+    "sofa": "다크 그레이 패브릭 소파",
+    "table": "월넛 원목 사이드테이블",
+    "tv": "65인치 블랙 프레임"
+  },
+  "office_desk": {
+    "setup": "법률 서류 정리함, 모니터 1대, 텀블러",
+    "chair": "허먼밀러 계열 블랙 메시 체어"
+  },
+  "usage_rule": "이미지 생성 및 배경 묘사 시 이 공간 설정과 일관성 유지. 사진에 집이 보일 때 위 앵커 참조."
+}

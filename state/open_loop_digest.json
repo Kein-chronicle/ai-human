@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_worker",
+  "summary": "열린 루프 없음",
+  "waiting_reply": false,
+  "unanswered_outgoing_count": 0,
+  "recent_counterpart_requests": [],
+  "recent_self_commitments": [],
+  "active_event_promises": [],
+  "sticky_facts_to_recall": [],
+  "last_updated_at": null,
+  "update_rule": "워커가 답변 후 업데이트: (1) 수정이가 요청한 것 중 아직 처리 안 한 것 → recent_counterpart_requests, (2) 내가 '나중에 알려줄게' 등 약속한 것 → recent_self_commitments, (3) 상대방 답장 대기 중이면 waiting_reply=true."
+}

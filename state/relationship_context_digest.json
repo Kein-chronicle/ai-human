@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_worker",
+  "summary": "아직 관계 다이제스트가 충분히 쌓이지 않음",
+  "top_milestones": [],
+  "comfort_patterns": [],
+  "affection_patterns": [],
+  "preference_bias": {
+    "prefer_topics": [],
+    "prefer_actions": [],
+    "prefer_styles": [],
+    "avoid_actions": [],
+    "avoid_styles": []
+  },
+  "top_memory_keys": [],
+  "last_updated_at": null,
+  "update_rule": "대화가 쌓이면 워커가 주요 패턴 발견 시 업데이트. prefer_topics/prefer_styles에 수정이가 좋아하는 주제/스타일 축적. 매 답변마다 빠른 참조용으로 사용."
+}
