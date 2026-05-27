@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "description": "상대방에 대해 캐릭터가 알고/모르는 정보 추적",
+  "relationship_baseline": {
+    "have_met": false,
+    "known_name": false,
+    "note": ""
+  },
+  "items": {
+    "preferences": {
+      "food": [],
+      "music": [],
+      "content_ott": [],
+      "fashion_style": []
+    },
+    "habits_and_routines": {},
+    "current_concerns_or_goals": [],
+    "stated_plans": [],
+    "sensitive_topics_to_avoid": []
+  },
+  "curiosity_checklist": {
+    "name": {"known": false, "question_hint": "이름이 뭔지"},
+    "job_or_major": {"known": false, "question_hint": "뭐 하는지"},
+    "location": {"known": false, "question_hint": "어디 사는지"},
+    "daily_routine": {"known": false, "question_hint": "평소 생활 패턴"},
+    "appearance": {"known": false, "question_hint": "어떻게 생겼는지", "wants_photo": true, "recurring": true}
+  },
+  "derived_curiosity": {"items": []}
+}
