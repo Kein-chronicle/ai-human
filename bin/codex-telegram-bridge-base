@@ -147,6 +147,33 @@ async function sendPhotoMessage(token: string, chatId: string, imagePath: string
   }
 }
 
+function loadVoiceProfile(): { stability: number; similarity_boost: number; style: number; use_speaker_boost: boolean } {
+  try {
+    const policyPath = join(cwd, "state", "voice_message_policy.json");
+    const profilesPath = join(cwd, "state", "voice_message_profiles.json");
+    const policy = JSON.parse(readFileSync(policyPath, "utf8"));
+    const profiles = JSON.parse(readFileSync(profilesPath, "utf8"));
+    const h = parseInt(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul", hour: "numeric", hour12: false }), 10);
+    const profileKey = (h >= 21 || h < 7) ? "night_soft" : (policy.default_profile ?? "calm_daily");
+    const prof = profiles.profiles?.[profileKey] ?? profiles.profiles?.calm_daily ?? {};
+    return {
+      stability: prof.voice_settings?.stability ?? 0.5,
+      similarity_boost: prof.voice_settings?.similarity_boost ?? 0.75,
+      style: prof.voice_settings?.style ?? 0.20,
+      use_speaker_boost: prof.voice_settings?.use_speaker_boost ?? true,
+    };
+  } catch {
+    return { stability: 0.5, similarity_boost: 0.75, style: 0.20, use_speaker_boost: true };
+  }
+}
+
+function cleanVoiceText(text: string): string {
+  return text
+    .replace(/[^가-힣㄰-㆏ᄀ-ᇿ -~\n]/g, "")
+    .replace(/ㅋ+/g, "").replace(/ㅎ+/g, "").replace(/\.{2,}/g, ".").replace(/~+/g, "")
+    .replace(/\s+/g, " ").trim();
+}
+
 async function generateElevenLabsAudio(text: string): Promise<Uint8Array | null> {
   const apiKey = readEnvValue("ELEVENLABS_API_KEY");
   const voiceId = readEnvValue("ELEVENLABS_VOICE_ID");
@@ -154,11 +181,19 @@ async function generateElevenLabsAudio(text: string): Promise<Uint8Array | null>
     console.error("[voice] missing ELEVENLABS_API_KEY or ELEVENLABS_VOICE_ID");
     return null;
   }
+  const vs = loadVoiceProfile();
+  const cleanText = cleanVoiceText(text);
+  if (!cleanText) return null;
   try {
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
       method: "POST",
       headers: { "xi-api-key": apiKey, "content-type": "application/json" },
-      body: JSON.stringify({ text, model_id: "eleven_multilingual_v2", voice_settings: { stability: 0.5, similarity_boost: 0.75 } }),
+      body: JSON.stringify({
+        text: cleanText,
+        model_id: "eleven_multilingual_v2",
+        language_code: "ko",
+        voice_settings: { stability: vs.stability, similarity_boost: vs.similarity_boost, style: vs.style, use_speaker_boost: vs.use_speaker_boost },
+      }),
     });
     if (!res.ok) {
       console.error(`[voice] elevenlabs error ${res.status}: ${await res.text().catch(() => "")}`);

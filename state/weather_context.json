@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "managed_by": "proactive_sender",
+  "location": "Seoul, South Korea",
+  "current_date": null,
+  "current_condition": "clear",
+  "summary": "맑음",
+  "temperature_c": 20,
+  "feels_like_c": 20,
+  "precipitation": "none",
+  "season_frame": "spring",
+  "mood_bias": "bright",
+  "last_fetched_at": null
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "managed_by": "bridge",
+  "primary_engine": "elevenlabs",
+  "default_delivery_method": "sendVoice",
+  "max_chars": 180,
+  "default_profile": "calm_daily",
+  "allow_voice_send": true,
+  "notes": "응우 음성 메시지 정책. ELEVENLABS_API_KEY + ELEVENLABS_VOICE_ID 필요."
+}
