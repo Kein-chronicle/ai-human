@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "managed_by": "proactive_sender",
+  "date": "",
+  "day_type": "weekday",
+  "workday": true,
+  "day_summary_seed": "",
+  "carry_over_from_previous_day": {
+    "sleep_debt": "low",
+    "emotional_residue": "neutral"
+  },
+  "morning_context": {"status": "inactive", "summary": "", "tone_bias": "neutral"},
+  "lunch_context": {"status": "inactive"},
+  "afternoon_context": {"status": "inactive"},
+  "evening_context": {"status": "inactive"},
+  "last_updated_at": null
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "managed_by": "proactive_sender",
+  "generation_enabled": true,
+  "content_level_mode": "auto",
+  "content_level_override": null,
+  "auto_level_rules": {
+    "work_hours": 1,
+    "commute": 1,
+    "lunch_break": 1,
+    "evening_home": 2,
+    "weekend": 2
+  },
+  "content_level_description": {
+    "1": "professional: 정장/수트, 사무실·법원·출퇴근 배경 — 공식적 외형",
+    "2": "casual: 캐주얼·홈웨어, 집·카페·거리 배경 — 편안한 외형"
+  },
+  "notes": "content_level_override가 null이면 activity+시간 기반 자동 레벨 사용"
+}

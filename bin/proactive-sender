@@ -221,6 +221,86 @@ function maybeUpdateSelfBusyState(): void {
   } catch {}
 }
 
+function maybeUpdateDayContext(): void {
+  const path = join(cwd, "state", "day_context.json");
+  const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  let existing: any = {};
+  try { existing = JSON.parse(readFileSync(path, "utf8")); } catch {}
+  if (existing.date === today) return;
+
+  const seeds = [
+    "자연스럽고 생활감 있는 흐름으로 이어지는 하루",
+    "별 일 없는 조용한 하루, 루틴대로 흘러가는 중",
+    "조금 피곤하지만 할 거 다 하는 하루",
+    "생각보다 일이 많아진 하루",
+    "잔잔하게 괜찮은 하루",
+  ];
+  const residues = ["neutral", "calm_and_open", "slightly_tired", "focused", "neutral"];
+  const ri = Math.floor(Math.random() * residues.length);
+
+  writeFileSync(path, JSON.stringify({
+    ...existing,
+    date: today,
+    day_type: [0, 6].includes(new Date().getDay()) ? "weekend" : "weekday",
+    workday: ![0, 6].includes(new Date().getDay()),
+    day_summary_seed: seeds[ri],
+    carry_over_from_previous_day: {
+      sleep_debt: Math.random() > 0.7 ? "medium" : "low",
+      emotional_residue: residues[ri],
+    },
+    morning_context: { status: "inactive", summary: "", tone_bias: "neutral" },
+    last_updated_at: new Date(Date.now() + 9 * 3600 * 1000).toISOString(),
+  }, null, 2));
+}
+
+function updateChatRuntimeSnapshot(): void {
+  const path = join(cwd, "state", "chat_runtime_snapshot.json");
+  const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  const h = nowKstHour();
+  let timeBlock = "evening";
+  if (h >= 7 && h < 9) timeBlock = "morning_commute";
+  else if (h >= 9 && h < 12) timeBlock = "work_morning";
+  else if (h >= 12 && h < 14) timeBlock = "lunch";
+  else if (h >= 14 && h < 18) timeBlock = "work_afternoon";
+  else if (h >= 18 && h < 21) timeBlock = "evening_commute";
+  else if (h >= 21) timeBlock = "night_home";
+  else timeBlock = "early_morning";
+
+  let presence: any = {};
+  let variance: any = {};
+  let daySat: any = {};
+  let pattern: any = {};
+  let weather: any = {};
+  try { presence = JSON.parse(readFileSync(join(cwd, "state", "character_presence.json"), "utf8")); } catch {}
+  try { variance = JSON.parse(readFileSync(join(cwd, "state", "reply_variance_state.json"), "utf8")); } catch {}
+  try { daySat = JSON.parse(readFileSync(join(cwd, "state", "day_satisfaction_state.json"), "utf8")); } catch {}
+  try { pattern = JSON.parse(readFileSync(join(cwd, "state", "conversation_pattern_state.json"), "utf8")); } catch {}
+  try { weather = JSON.parse(readFileSync(join(cwd, "state", "weather_context.json"), "utf8")); } catch {}
+
+  writeFileSync(path, JSON.stringify({
+    schema_version: 1,
+    managed_by: "proactive_sender",
+    current_date: today,
+    current_time_block: timeBlock,
+    surface_mood: presence.surface_mood ?? "neutral",
+    energy_level: presence.energy_level ?? 70,
+    affection_level: presence.affection_level ?? 75,
+    reply_variance_profile: variance.current_profile ?? "medium",
+    blocked_phrases: [],
+    blocked_question_intents: pattern.blocked_question_intents ?? [],
+    blocked_opening_styles: pattern.blocked_opening_styles ?? [],
+    preferred_next_moves: pattern.preferred_next_moves ?? [],
+    conversation_guard_summary: {
+      conversation_active: false,
+      waiting_reply: false,
+      outgoing_cooldown: false,
+    },
+    weather_summary: weather.summary ?? "",
+    day_satisfaction_label: daySat.label ?? "neutral_day",
+    last_updated_at: new Date(Date.now() + 9 * 3600 * 1000).toISOString(),
+  }, null, 2));
+}
+
 function maybeUpdateCharacterPresence(): void {
   const presencePath = join(cwd, "state", "character_presence.json");
   const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
@@ -492,7 +572,9 @@ async function main() {
   maybeUpdateSelfBusyState();
   maybeUpdateDaySatisfaction();
   maybeUpdateReplyVariance();
+  maybeUpdateDayContext();
   maybeUpdateCharacterPresence();
+  updateChatRuntimeSnapshot();
   maybeRefreshAmbientDetails();
   maybeSelectTodayEvents();
   await maybeUpdateWeather();

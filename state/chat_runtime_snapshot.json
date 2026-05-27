@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "managed_by": "proactive_sender",
+  "current_date": "",
+  "current_time_block": "",
+  "current_activity": "",
+  "surface_mood": "neutral",
+  "energy_level": 70,
+  "affection_level": 75,
+  "reply_variance_profile": "medium",
+  "blocked_phrases": [],
+  "blocked_question_intents": [],
+  "blocked_opening_styles": [],
+  "preferred_next_moves": [],
+  "conversation_guard_summary": {
+    "conversation_active": false,
+    "waiting_reply": false,
+    "outgoing_cooldown": false
+  },
+  "weather_summary": "",
+  "day_satisfaction_label": "neutral_day",
+  "last_updated_at": null,
+  "notes": "모든 상태의 통합 런타임 스냅샷 — proactive_sender가 매 실행마다 업데이트"
+}

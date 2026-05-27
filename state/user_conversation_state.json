@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_worker",
+  "state_key": "available",
+  "availability": "open",
+  "followup_policy": "default",
+  "tone_hint": "neutral",
+  "confidence": 0.5,
+  "reason": "초기 상태",
+  "source_timestamp": null,
+  "source_excerpt": null,
+  "applies_until": null,
+  "should_suppress_waiting_reply": false,
+  "active_state_keys": [],
+  "active_state_summaries": [],
+  "last_updated_at": null,
+  "notes": "상대방 실시간 가용성 상태 — counterpart_state_memory보다 빠른 실시간 레이어"
+}
