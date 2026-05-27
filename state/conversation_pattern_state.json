@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_worker",
+  "recent_question_intents": [],
+  "recent_opening_styles": [],
+  "question_intent_counts": {},
+  "opening_style_counts": {},
+  "blocked_question_intents": [],
+  "blocked_opening_styles": [],
+  "preferred_next_moves": [],
+  "last_updated_at": null,
+  "notes": "선톡 시작 패턴·질문 의도 반복 방지"
+}

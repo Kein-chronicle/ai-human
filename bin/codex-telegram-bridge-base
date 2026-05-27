@@ -147,6 +147,46 @@ async function sendPhotoMessage(token: string, chatId: string, imagePath: string
   }
 }
 
+function loadVoiceProfile(): { stability: number; similarity_boost: number; style: number; use_speaker_boost: boolean } {
+  try {
+    const policyPath = join(cwd, "state", "voice_message_policy.json");
+    const profilesPath = join(cwd, "state", "voice_message_profiles.json");
+    const policy = JSON.parse(readFileSync(policyPath, "utf8"));
+    const profiles = JSON.parse(readFileSync(profilesPath, "utf8"));
+    const h = parseInt(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul", hour: "numeric", hour12: false }), 10);
+    const profileKey = (h >= 21 || h < 7) ? "night_soft" : (policy.default_profile ?? "calm_daily");
+    const p = profiles[profileKey] ?? profiles[policy.default_profile ?? "calm_daily"] ?? {};
+    const vs = p.voice_settings ?? {};
+    return { stability: vs.stability ?? 0.45, similarity_boost: vs.similarity_boost ?? 0.80, style: vs.style ?? 0.20, use_speaker_boost: vs.use_speaker_boost ?? true };
+  } catch {
+    return { stability: 0.5, similarity_boost: 0.75, style: 0.20, use_speaker_boost: true };
+  }
+}
+
+function loadHabitPhrase(): string {
+  try {
+    const data = JSON.parse(readFileSync(join(cwd, "state", "voice_habit_phrases.json"), "utf8"));
+    if (!data?.enabled || !Array.isArray(data.phrases) || data.phrases.length === 0) return "";
+    const total = data.phrases.reduce((s: number, p: any) => s + (p.weight ?? 1), 0);
+    let r = Math.random() * total;
+    for (const p of data.phrases) {
+      r -= p.weight ?? 1;
+      if (r <= 0) return p.text ?? "";
+    }
+    return data.phrases[0].text ?? "";
+  } catch { return ""; }
+}
+
+function cleanVoiceText(text: string): string {
+  const cleaned = text
+    .replace(/[^가-힣㄰-㆏ᄀ-ᇿ -~\n]/g, "")
+    .replace(/ㅋ+/g, "").replace(/ㅎ+/g, "").replace(/\.{2,}/g, ".").replace(/~+/g, "")
+    .replace(/\s+/g, " ").trim();
+  const habit = loadHabitPhrase();
+  if (!habit || cleaned.length < 8) return cleaned;
+  return `${habit} ${cleaned}`;
+}
+
 async function generateElevenLabsAudio(text: string): Promise<Uint8Array | null> {
   const apiKey = readEnvValue("ELEVENLABS_API_KEY");
   const voiceId = readEnvValue("ELEVENLABS_VOICE_ID");
@@ -154,11 +194,19 @@ async function generateElevenLabsAudio(text: string): Promise<Uint8Array | null>
     console.error("[voice] missing ELEVENLABS_API_KEY or ELEVENLABS_VOICE_ID");
     return null;
   }
+  const vs = loadVoiceProfile();
+  const cleanText = cleanVoiceText(text);
+  if (!cleanText) return null;
   try {
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
       method: "POST",
       headers: { "xi-api-key": apiKey, "content-type": "application/json" },
-      body: JSON.stringify({ text, model_id: "eleven_multilingual_v2", voice_settings: { stability: 0.5, similarity_boost: 0.75 } }),
+      body: JSON.stringify({
+        text: cleanText,
+        model_id: "eleven_multilingual_v2",
+        language_code: "ko",
+        voice_settings: vs,
+      }),
     });
     if (!res.ok) {
       console.error(`[voice] elevenlabs error ${res.status}: ${await res.text().catch(() => "")}`);
