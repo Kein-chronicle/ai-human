@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_worker",
+  "milestones": [],
+  "notes": "대화 중 관계 진전 순간을 기록. 워커가 특별한 순간(첫 고백, 약속 등) 발생 시 추가.",
+  "schema_per_milestone": {
+    "key": "milestone_key",
+    "summary": "한 줄 설명",
+    "occurred_at": "ISO날짜",
+    "source_excerpt": "원문 발췌"
+  }
+}

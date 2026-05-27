@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "managed_by": "weekly_summary_engine",
+  "purpose": "주간 대화 요약. 수정이와 나눈 일주일치 대화를 요약해 장기 일관성 유지. 최근 1-2주 요약을 매 답변마다 참조.",
+  "last_generated_at": null,
+  "current_week_iso": null,
+  "weekly_summaries": [],
+  "schema_per_summary": {
+    "week_start_iso": "ISO 날짜",
+    "week_end_iso": "ISO 날짜",
+    "key_events": ["그 주 두드러진 일 1-2문장"],
+    "user_mood_arc": "수정이 분위기 한 줄 요약",
+    "main_topics": ["반복 화제 3-5개"],
+    "user_disclosed_facts": ["수정이가 새로 알려준 정보"],
+    "promises_or_plans": ["약속/계획 - 다음 주에 이어받을 것"],
+    "outstanding_unresolved": ["답 못한 질문 / 미뤄둔 얘기"]
+  },
+  "generation_rule": "매주 일요일 23시 tools/generate_weekly_summary.py 실행으로 자동 생성. 직전 4주만 유지.",
+  "usage_rule": "최근 1-2주 요약은 매 답변마다 참조. 이전 요약은 trigger 시에만."
+}

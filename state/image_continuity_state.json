@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_worker",
+  "last_sent_image": null,
+  "continuity_band": null,
+  "preserve_scope": "outfit_face",
+  "schema_last_sent": {
+    "timestamp": "ISO",
+    "path": "절대경로",
+    "caption": "전송 시 메시지",
+    "scene_tag": "출근/집/운동 등",
+    "outfit_summary": "복장 설명"
+  },
+  "update_rule": "사진 전송 후 워커가 last_sent_image 업데이트. 같은 날 같은 시간대 사진은 복장/헤어 continuity 유지."
+}

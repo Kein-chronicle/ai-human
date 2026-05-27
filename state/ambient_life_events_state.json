@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "timezone": "Asia/Seoul",
+  "managed_by": "proactive_sender",
+  "current_date": null,
+  "selected_persistent_details": [],
+  "detail_pool": [
+    {"category": "room", "id": "phone_charging", "summary": "잠들기 전 폰을 침대 옆에 꽂아두고 잔다"},
+    {"category": "desk", "id": "cold_coffee", "summary": "책상 위 텀블러 커피가 식어가고 있다"},
+    {"category": "room", "id": "reading_lamp_on", "summary": "밤에는 큰 조명 끄고 독서등만 켜둔다"},
+    {"category": "carry", "id": "pen_pocket", "summary": "늘 펜을 챙겨 다닌다"},
+    {"category": "room", "id": "shoes_by_door", "summary": "현관에 신발이 반듯하게 정렬돼 있다"}
+  ],
+  "last_refreshed_at": null,
+  "refresh_rule": "하루 시작에 detail_pool에서 2-3개 랜덤 선택 → selected_persistent_details에 저장."
+}
