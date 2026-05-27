@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "managed_by": "proactive_sender",
+  "weekends": {},
+  "schema_per_weekend": {
+    "weekend_key": "YYYY-MM-DD (토요일)",
+    "preview": "이번 주말 한 줄 요약",
+    "days": {
+      "sat": {"date": "YYYY-MM-DD", "plan_id": "", "title": "", "preview": ""},
+      "sun": {"date": "YYYY-MM-DD", "plan_id": "", "title": "", "preview": ""}
+    }
+  },
+  "notes": "generate_daily_schedule.py가 주말 일정 생성 시 이 파일에도 기록. proactive-sender가 참조."
+}

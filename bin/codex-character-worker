@@ -552,6 +552,71 @@ function buildImageContinuitySection(): string[] {
   } catch { return []; }
 }
 
+function buildSignaturePhrasesSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(join(cwd, "state", "signature_phrases.json"), "utf8"));
+    const all: string[] = [];
+    for (const pool of Object.values<any>(data?.pools ?? {})) {
+      if (Array.isArray(pool)) all.push(...pool.map((p: any) => p.text).filter(Boolean));
+    }
+    if (all.length === 0) return [];
+    const sample = all.sort(() => Math.random() - 0.5).slice(0, 4);
+    return [`[캐릭터 말투 어미/표현 샘플]`, `${sample.join(" / ")}`, `↑ 자연스러운 것 하나 녹이기. 매번 같은 것 쓰지 말 것.`, ""];
+  } catch { return []; }
+}
+
+function buildChatLengthSection(): string[] {
+  try {
+    const policy = JSON.parse(readFileSync(join(cwd, "state", "chat_length_policy.json"), "utf8"));
+    const h = nowKstHour();
+    let band = "medium";
+    const td = policy.time_defaults ?? {};
+    if (h >= 7 && h < 9) band = td["commute_07_09"] ?? "short";
+    else if (h >= 9 && h < 18) band = td["work_09_18"] ?? "micro";
+    else if (h >= 18 && h < 21) band = td["evening_18_21"] ?? "medium";
+    else if (h >= 21) band = td["night_21_00"] ?? "medium";
+    else band = td["quiet_00_07"] ?? "short";
+    const b = policy.bands?.[band];
+    if (!b) return [];
+    return [`[답변 길이 가이드]`, `${band}: ${b.char_range[0]}~${b.char_range[1]}자, 문장 ${b.sentence_range[0]}~${b.sentence_range[1]}개, 질문 최대 ${b.question_limit}개`, ""];
+  } catch { return []; }
+}
+
+function buildWeatherSection(): string[] {
+  try {
+    const w = JSON.parse(readFileSync(join(cwd, "state", "weather_context.json"), "utf8"));
+    if (!w?.summary) return [];
+    return [`[현재 날씨]`, `${w.summary} / ${w.temperature_c ?? "?"}°C (체감 ${w.feels_like_c ?? "?"}°C)`, ""];
+  } catch { return []; }
+}
+
+function buildTodayMicroEventsSection(): string[] {
+  try {
+    const pool = JSON.parse(readFileSync(join(cwd, "state", "random_event_pool.json"), "utf8"));
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    const sel = pool?.selected_today_events;
+    if (!sel || sel.date !== today || !Array.isArray(sel.events) || sel.events.length === 0) return [];
+    const out: string[] = [`[오늘의 소소한 이벤트]`, `자연스러운 흐름에 한 번씩 회수. 시제 주의.`];
+    for (const e of sel.events) out.push(`- [${e.category}/${e.tone}] ${e.summary}`);
+    out.push("");
+    return out;
+  } catch { return []; }
+}
+
+function buildUserPreferenceSection(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(join(cwd, "state", "user_preference_reinforcement.json"), "utf8"));
+    const likes: any[] = data?.learned_preferences?.likes ?? [];
+    const dislikes: any[] = data?.learned_preferences?.dislikes ?? [];
+    if (likes.length === 0 && dislikes.length === 0) return [];
+    const out: string[] = [`[상대방 반응 패턴]`];
+    if (likes.length > 0) out.push(`좋아하는 것: ${likes.slice(0, 4).map((x: any) => x?.pattern ?? x).join(", ")}`);
+    if (dislikes.length > 0) out.push(`반응 약한 것: ${dislikes.slice(0, 3).map((x: any) => x?.pattern ?? x).join(", ")}`);
+    out.push("");
+    return out;
+  } catch { return []; }
+}
+
 function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: string }, text: string, userName: string, recentSummary: string, batchMessages: any[], photoHint = false, voiceHint = false, busyPhotoHint = false, proactive = false, sessionId: string | null = null, photoFailHint = false): string {
   const id = char?.identity ?? {};
   const prof = char?.profession ?? {};
@@ -654,6 +719,9 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
     }
   } catch {}
 
+  lines.push(...buildChatLengthSection());
+  lines.push(...buildWeatherSection());
+  lines.push(...buildTodayMicroEventsSection());
   lines.push(...buildWeeklyConversationSummarySection());
   lines.push(...buildCounterpartStateSection(knownUserName || "상대방"));
   lines.push(...buildRelationshipSection());
@@ -663,6 +731,8 @@ function buildPrompt(char: any, voiceGuide: string, userIdentity: { name?: strin
   lines.push(...buildTimeMicroDetailSection());
   lines.push(...buildAmbientLifeEventsSection());
   lines.push(...buildPhraseRepetitionGuardSection());
+  lines.push(...buildSignaturePhrasesSection());
+  lines.push(...buildUserPreferenceSection());
   lines.push(...buildCuriositySection(name));
   lines.push(...buildImageContinuitySection());
 

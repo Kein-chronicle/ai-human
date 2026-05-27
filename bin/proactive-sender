@@ -109,6 +109,48 @@ function toMinutes(hhmm: string): number {
   return (h || 0) * 60 + (m || 0);
 }
 
+async function maybeUpdateWeather(): Promise<void> {
+  try {
+    const weatherPath = join(cwd, "state", "weather_context.json");
+    if (!existsSync(weatherPath)) return;
+    const data = JSON.parse(readFileSync(weatherPath, "utf8"));
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    if (data?.current_date === today) return;
+    const res = await fetch("https://wttr.in/Seoul?format=j1", { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return;
+    const w = await res.json() as any;
+    const cur = w?.current_condition?.[0];
+    if (!cur) return;
+    const tempC = parseInt(cur.temp_C ?? "20", 10);
+    const feelsC = parseInt(cur.FeelsLikeC ?? String(tempC), 10);
+    const mm = cur.precipMM ? parseFloat(cur.precipMM) : 0;
+    const precip = mm > 1 ? "rain" : "none";
+    const month = parseInt(today.slice(5, 7), 10);
+    const season = month >= 3 && month <= 5 ? "spring" : month >= 6 && month <= 8 ? "summer" : month >= 9 && month <= 11 ? "autumn" : "winter";
+    const summary = tempC <= 5 ? "많이 추운 날씨" : tempC <= 15 ? (precip === "rain" ? "비 오는 쌀쌀한 날씨" : "선선한 날씨") :
+      tempC <= 25 ? (precip === "rain" ? "비 오는 포근한 날씨" : "포근하고 좋은 날씨") : "더운 날씨";
+    data.current_date = today; data.summary = summary; data.temperature_c = tempC;
+    data.feels_like_c = feelsC; data.precipitation = precip; data.season_frame = season;
+    data.last_fetched_at = new Date().toISOString();
+    writeFileSync(weatherPath, JSON.stringify(data, null, 2) + "\n", { mode: 0o600 });
+  } catch {}
+}
+
+function maybeSelectTodayEvents(): void {
+  try {
+    const poolPath = join(cwd, "state", "random_event_pool.json");
+    if (!existsSync(poolPath)) return;
+    const data = JSON.parse(readFileSync(poolPath, "utf8"));
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    if (data?.selected_today_events?.date === today) return;
+    const pool: any[] = data?.event_pool ?? [];
+    if (pool.length === 0) return;
+    const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, 4);
+    data.selected_today_events = { date: today, events: shuffled };
+    writeFileSync(poolPath, JSON.stringify(data, null, 2) + "\n", { mode: 0o600 });
+  } catch {}
+}
+
 function maybeRefreshAmbientDetails(): void {
   try {
     const ambientPath = join(cwd, "state", "ambient_life_events_state.json");
@@ -356,6 +398,8 @@ async function main() {
   maybeGenerateSchedule();
   maybeUpdateSelfBusyState();
   maybeRefreshAmbientDetails();
+  maybeSelectTodayEvents();
+  await maybeUpdateWeather();
 
   if (existsSync(muteFlagFile)) { console.error("[proactive] muted, skip"); return; }
   if (isInQuietHours()) { console.error("[proactive] quiet hours, skip"); return; }

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "managed_by": "bridge",
+  "default_profile": "calm_daily",
+  "profiles": {
+    "calm_daily": {
+      "description": "자연스럽고 편안한 기본 음성",
+      "max_chars": 120,
+      "voice_settings": {
+        "stability": 0.45,
+        "similarity_boost": 0.80,
+        "style": 0.20,
+        "use_speaker_boost": true
+      },
+      "text_rules": [
+        "짧은 문장 2~3개로 끝낸다",
+        "이모지/마크다운/특수기호 제거",
+        "ㅋㅋ ㅎㅎ 등 텍스트 이모티콘 제거"
+      ]
+    },
+    "night_soft": {
+      "description": "밤에 쓰는 차분하고 낮은 톤",
+      "max_chars": 100,
+      "voice_settings": {
+        "stability": 0.55,
+        "similarity_boost": 0.82,
+        "style": 0.15,
+        "use_speaker_boost": false
+      },
+      "text_rules": [
+        "짧고 차분하게",
+        "감탄사 최소화"
+      ]
+    }
+  }
+}

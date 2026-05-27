@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "managed_by": "character_worker",
+  "last_updated_at": null,
+  "message_stats": {
+    "incoming_text_processed": 0,
+    "positive_signals": 0,
+    "negative_signals": 0
+  },
+  "learned_preferences": {
+    "likes": [],
+    "dislikes": []
+  },
+  "update_rule": "수정이의 긍정 반응(ㅋㅋ/좋아/맞아/헤헤 등)은 likes에, 무반응/화제전환/짧은 Ok는 dislikes에 시그널로 축적. 워커가 패턴 인식 후 업데이트."
+}
