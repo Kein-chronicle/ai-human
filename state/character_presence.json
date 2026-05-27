@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "managed_by": "proactive_sender",
-  "current_date": "",
-  "current_time_block": "",
+  "current_date": "2026-05-27",
+  "current_time_block": "work_morning",
   "current_activity": "daily_life",
-  "surface_mood": "neutral",
-  "energy_level": 70,
-  "affection_level": 75,
+  "surface_mood": "good",
+  "energy_level": 80,
+  "affection_level": 73,
   "care_bias": 80,
-  "reply_tempo": "normal",
-  "valid_until": "",
+  "reply_tempo": "slow",
+  "valid_until": "2026-05-27T11:47:00.513Z",
   "notes": "캐릭터 현재 상황 통합 상태 — self_busy_state보다 풍부한 레이어"
 }

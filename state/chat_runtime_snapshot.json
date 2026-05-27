@@ -1,13 +1,12 @@
 {
   "schema_version": 1,
   "managed_by": "proactive_sender",
-  "current_date": "",
-  "current_time_block": "",
-  "current_activity": "",
-  "surface_mood": "neutral",
-  "energy_level": 70,
-  "affection_level": 75,
-  "reply_variance_profile": "medium",
+  "current_date": "2026-05-27",
+  "current_time_block": "work_morning",
+  "surface_mood": "good",
+  "energy_level": 80,
+  "affection_level": 73,
+  "reply_variance_profile": "brief",
   "blocked_phrases": [],
   "blocked_question_intents": [],
   "blocked_opening_styles": [],
@@ -17,8 +16,7 @@
     "waiting_reply": false,
     "outgoing_cooldown": false
   },
-  "weather_summary": "",
-  "day_satisfaction_label": "neutral_day",
-  "last_updated_at": null,
-  "notes": "모든 상태의 통합 런타임 스냅샷 — proactive_sender가 매 실행마다 업데이트"
+  "weather_summary": "포근하고 좋은 날씨",
+  "day_satisfaction_label": "slightly_tired",
+  "last_updated_at": "2026-05-27T10:47:00.843Z"
 }

@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "managed_by": "proactive_sender",
-  "current_date": "",
-  "current_time_block": "",
+  "current_date": "2026-05-27",
+  "current_time_block": "daytime",
   "last_known_platform": "YouTube",
   "last_known_format": "longform",
-  "last_known_category": "news_briefing",
+  "last_known_category": "variety_clips",
   "last_known_title": null,
   "fallback_line_examples": [
     "유튜브에서 뉴스 클립 몇 개 보고 있었어",
@@ -14,5 +14,5 @@
     "야구 하이라이트 다시 보고 있었어",
     "다큐 같은 거 틀어놓고 멍하니 보고 있었어"
   ],
-  "updated_at": null
+  "updated_at": "2026-05-27T10:07:00.681Z"
 }

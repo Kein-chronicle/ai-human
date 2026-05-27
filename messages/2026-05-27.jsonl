@@ -1,0 +1,15 @@
+{"timestamp":"2026-05-26T23:07:12.978Z","direction":"incoming","telegram_user":"K8832353","type":"text","content":"응응 출근중인거야?"}
+{"timestamp":"2026-05-26T23:07:24.107Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"어, 지금 가는 중이야","delivery_group_id":"tg_mpn8wi8b_salk21","delivery_part_index":1,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-26T23:07:24.107Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"환승해서 막 지하철 탔어. 수정이는 이제 좀 깼어?","delivery_group_id":"tg_mpn8wi8b_salk21","delivery_part_index":2,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-26T23:08:44.037Z","direction":"incoming","telegram_user":"K8832353","type":"text","content":"일어나는중이야~"}
+{"timestamp":"2026-05-26T23:08:56.084Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"천천히 깨도 돼","delivery_group_id":"tg_mpn8yh78_swulgy","delivery_part_index":1,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-26T23:08:56.084Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"아침엔 원래 좀 멍하지 ㅋㅋ 밥은 꼭 챙겨 먹어","delivery_group_id":"tg_mpn8yh78_swulgy","delivery_part_index":2,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-26T23:09:32.985Z","direction":"incoming","telegram_user":"K8832353","type":"text","content":"응"}
+{"timestamp":"2026-05-26T23:09:43.332Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"그래, 잘했어","delivery_group_id":"tg_mpn8zhno_n7yurr","delivery_part_index":1,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-26T23:09:43.332Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"너 아침 약하잖아. 천천히 준비해 🙂","delivery_group_id":"tg_mpn8zhno_n7yurr","delivery_part_index":2,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-26T23:35:09.342Z","direction":"incoming","telegram_user":"K8832353","type":"text","content":"몇시에 도착해? 가는중이야?"}
+{"timestamp":"2026-05-26T23:35:21.542Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"어, 아직 가는 중이야","delivery_group_id":"tg_mpn9wgjq_utimaz","delivery_part_index":1,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-26T23:35:21.542Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"한 9시 전엔 도착할 것 같아. 수정이는 이제 정신 좀 들었어?","delivery_group_id":"tg_mpn9wgjq_utimaz","delivery_part_index":2,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-26T23:35:41.479Z","direction":"incoming","telegram_user":"K8832353","type":"text","content":"응~ 이제 정신좀 차렸어"}
+{"timestamp":"2026-05-26T23:35:51.860Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"다행이네 ㅋㅋ","delivery_group_id":"tg_mpn9x3xw_qkz9ml","delivery_part_index":1,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-26T23:35:51.860Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"수정이는 보통 아침에 뭐 하면서 완전히 깨?","delivery_group_id":"tg_mpn9x3xw_qkz9ml","delivery_part_index":2,"delivery_part_count":2,"delivery_mode":"split"}

@@ -1,10 +1,10 @@
 {
   "current_block": {
-    "type": "commute",
-    "label": "출근 중",
-    "until": "08:48",
-    "started_at": "2026-05-26T23:46:58.675Z"
+    "type": "work",
+    "label": "업무 중",
+    "until": "19:00",
+    "started_at": "2026-05-27T01:47:00.826Z"
   },
-  "updated_at": "2026-05-26T23:46:58.675Z",
+  "updated_at": "2026-05-27T01:47:00.826Z",
   "updated_by": "proactive_sender"
 }

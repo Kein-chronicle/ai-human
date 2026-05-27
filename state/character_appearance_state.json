@@ -1,18 +1,15 @@
 {
   "schema_version": 1,
   "managed_by": "proactive_sender",
-  "current_date": "",
-  "current_time_block": "",
-  "appearance_branch": "daily",
-  "outfit_context": "casual_home",
-  "top": "티셔츠",
-  "bottom": "트레이닝 팬츠",
+  "current_date": "2026-05-27",
+  "current_time_block": "work_morning",
+  "outfit_context": "full_suit",
+  "top": "수트 재킷 + 드레스 셔츠 + 타이",
+  "bottom": "슬랙스",
+  "footwear": "구두",
   "outerwear": null,
-  "footwear": "슬리퍼",
-  "accessories": [],
-  "held_item": "휴대폰",
-  "hair_state": "natural_loose",
-  "hair_detail": "자연스럽게 풀어진 상태",
-  "last_updated_at": null,
-  "notes": "시간대·활동 기반 실시간 외형 상태 — 이미지 생성 프롬프트에 직접 반영"
+  "hair_state": "neat_work_style",
+  "hair_detail": "정돈된 업무 헤어",
+  "held_item": "서류 또는 폰",
+  "last_updated_at": "2026-05-27T10:07:00.680Z"
 }

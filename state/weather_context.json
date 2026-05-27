@@ -2,13 +2,13 @@
   "schema_version": 1,
   "managed_by": "proactive_sender",
   "location": "Seoul, South Korea",
-  "current_date": null,
+  "current_date": "2026-05-27",
   "current_condition": "clear",
-  "summary": "맑음",
-  "temperature_c": 20,
-  "feels_like_c": 20,
+  "summary": "포근하고 좋은 날씨",
+  "temperature_c": 21,
+  "feels_like_c": 21,
   "precipitation": "none",
   "season_frame": "spring",
   "mood_bias": "bright",
-  "last_fetched_at": null
+  "last_fetched_at": "2026-05-27T00:27:00.443Z"
 }

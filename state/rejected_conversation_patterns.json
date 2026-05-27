@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "managed_by": "conversation_learning_loop",
+  "updated_at": "2026-05-27T10:27:43+09:00",
+  "patterns": [
+    {
+      "id": "care_offer__그래-천천히-해",
+      "text": "그래, 천천히 해",
+      "category": "care_offer",
+      "change_type": "tone_adjustment",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": false,
+        "reasons": [
+          "naturalness_conflict"
+        ],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": false
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-05-27T10:27:43+09:00",
+      "rejected_at": "2026-05-27T10:27:43+09:00"
+    },
+    {
+      "id": "current_state_check__수정아는-뭐-해먹었어",
+      "text": "수정아는 뭐 해먹었어?",
+      "category": "current_state_check",
+      "change_type": "length_adjustment",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": false,
+        "reasons": [
+          "naturalness_conflict"
+        ],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": false
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns",
+          "conversation_pattern_state"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-05-27T10:27:43+09:00",
+      "rejected_at": "2026-05-27T10:27:43+09:00"
+    },
+    {
+      "id": "current_state_check__응-방금-도착했어",
+      "text": "응, 방금 도착했어",
+      "category": "current_state_check",
+      "change_type": "length_adjustment",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": false,
+        "reasons": [
+          "naturalness_conflict"
+        ],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": false
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns",
+          "conversation_pattern_state"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-05-27T10:27:43+09:00",
+      "rejected_at": "2026-05-27T10:27:43+09:00"
+    },
+    {
+      "id": "current_state_check__응-지금-가는-중이야",
+      "text": "응, 지금 가는 중이야",
+      "category": "current_state_check",
+      "change_type": "length_adjustment",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": false,
+        "reasons": [
+          "naturalness_conflict"
+        ],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": false
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns",
+          "conversation_pattern_state"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-05-27T10:27:43+09:00",
+      "rejected_at": "2026-05-27T10:27:43+09:00"
+    },
+    {
+      "id": "meal_routine__아직-못-먹었어",
+      "text": "아직 못 먹었어",
+      "category": "meal_routine",
+      "change_type": "length_adjustment",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": false,
+        "reasons": [
+          "naturalness_conflict"
+        ],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": false
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-05-27T10:27:43+09:00",
+      "rejected_at": "2026-05-27T10:27:43+09:00"
+    }
+  ]
+}
