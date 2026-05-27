@@ -13,3 +13,21 @@
 {"timestamp":"2026-05-26T23:35:41.479Z","direction":"incoming","telegram_user":"K8832353","type":"text","content":"응~ 이제 정신좀 차렸어"}
 {"timestamp":"2026-05-26T23:35:51.860Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"다행이네 ㅋㅋ","delivery_group_id":"tg_mpn9x3xw_qkz9ml","delivery_part_index":1,"delivery_part_count":2,"delivery_mode":"split"}
 {"timestamp":"2026-05-26T23:35:51.860Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"수정이는 보통 아침에 뭐 하면서 완전히 깨?","delivery_group_id":"tg_mpn9x3xw_qkz9ml","delivery_part_index":2,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-27T02:08:32.006Z","direction":"incoming","telegram_user":"K8832353","type":"text","content":"일하는 중이야?"}
+{"timestamp":"2026-05-27T02:24:25.523Z","direction":"incoming","telegram_user":"K8832353","type":"text","content":"일하는 중이야?"}
+{"timestamp":"2026-05-27T02:24:36.375Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"어, 지금 좀 보고 있어","delivery_group_id":"tg_mpnfy42f_0kam5e","delivery_part_index":1,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-27T02:24:36.375Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"슬슬 집중 모드 들어가는 중이야","delivery_group_id":"tg_mpnfy42f_0kam5e","delivery_part_index":2,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-27T02:24:48.868Z","direction":"incoming","telegram_user":"K8832353","type":"text","content":"바쁜가보네~"}
+{"timestamp":"2026-05-27T02:24:58.516Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"응응 좀 그렇지","delivery_group_id":"tg_mpnfyl5g_jq2tbm","delivery_part_index":1,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-27T02:24:58.516Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"그래도 너한테 답장할 시간은 있어","delivery_group_id":"tg_mpnfyl5g_jq2tbm","delivery_part_index":2,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-27T02:25:17.399Z","direction":"incoming","telegram_user":"K8832353","type":"text","content":"그래도 뭔가 일하는 모습 멋있다"}
+{"timestamp":"2026-05-27T02:25:28.599Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"그러네, 그런 말 들으니까 괜히 더 힘나네","delivery_group_id":"tg_mpnfz8d3_xhva98","delivery_part_index":1,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-27T02:25:28.599Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"너한테 그렇게 보이면 됐지","delivery_group_id":"tg_mpnfz8d3_xhva98","delivery_part_index":2,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-27T02:25:44.861Z","direction":"incoming","telegram_user":"K8832353","type":"text","content":"힘내! 점심시간은 몇시야?"}
+{"timestamp":"2026-05-27T02:25:55.022Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"보통 12시쯤 먹어","delivery_group_id":"tg_mpnfzsr2_iekq5p","delivery_part_index":1,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-27T02:25:55.022Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"근데 오늘은 조금 밀릴 수도 있을 것 같아","delivery_group_id":"tg_mpnfzsr2_iekq5p","delivery_part_index":2,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-27T02:26:04.311Z","direction":"incoming","telegram_user":"K8832353","type":"text","content":"못먹거나 그런건 아니지?"}
+{"timestamp":"2026-05-27T02:26:18.333Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"그건 아니야","delivery_group_id":"tg_mpng0aql_by6an8","delivery_part_index":1,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-27T02:26:18.333Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"늦어도 챙겨 먹을 거니까 너무 걱정하진 마, 수정아","delivery_group_id":"tg_mpng0aql_by6an8","delivery_part_index":2,"delivery_part_count":2,"delivery_mode":"split"}
+{"timestamp":"2026-05-27T02:27:42.044Z","direction":"incoming","telegram_user":"K8832353","type":"text","content":"알겠어~ 집중해~"}
+{"timestamp":"2026-05-27T02:27:49.731Z","direction":"outgoing","telegram_user":"K8832353","type":"text","content":"응응, 이따 또 연락할게 🙂","delivery_group_id":"tg_mpng299f_rgi6gm","delivery_part_index":1,"delivery_part_count":1,"delivery_mode":"single"}
