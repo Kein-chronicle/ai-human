@@ -71,7 +71,7 @@ function readEnvValue(key: string): string {
   }
 }
 
-const VOICE_REQUEST_RE = /목소리\s*(들려|보내|해|줘|보여)|음성\s*(보내|줘|들려)|보이스|voice/i;
+const VOICE_REQUEST_RE = /목소리|음성\s*(보내|줘|들려)|보이스|voice/i;
 const PHOTO_DIRECT_REQUEST_RE = /사진\s*(보내|줘|줄|좀|보여|찍어|올려)|셀카|얼굴\s*(보여|보내)/;
 
 function pickReferenceImage(): string | null {
@@ -1262,25 +1262,30 @@ function flushPendingIncoming(): Array<{ timestamp: string; text: string; userNa
 // 캐릭터 발신 텍스트에서 self-busy 진입 키워드 감지 → 상태 자동 세팅
 const SWIM_TRIGGERS = ["수영 갈게", "수영할게", "수영 해야", "수영하러", "물 들어가", "레인 들어가", "풀장 가", "수영 시작"];
 const EXERCISE_TRIGGERS = ["헬스 갈게", "헬스할게", "운동 갈게", "러닝 갈게", "필라테스 갈게", "요가 갈게", "운동하러"];
+const SLEEP_TRIGGERS = ["자야겠어", "자야겠다", "이제 자야", "자려고", "자러 가야", "잠들 것 같아", "잠들겠어", "잘 것 같아", "잘게", "자야할 것 같아", "굿밤", "좋은 꿈", "내일 연락", "아침에 연락", "아침에 봐", "아침에 또"];
 
 function detectAndSetSelfBusy(sentTexts: string[]): void {
   const combined = sentTexts.join(" ");
   const isSwim = SWIM_TRIGGERS.some((kw) => combined.includes(kw));
   const isExercise = !isSwim && EXERCISE_TRIGGERS.some((kw) => combined.includes(kw));
-  if (!isSwim && !isExercise) return;
+  const isSleep = !isSwim && !isExercise && SLEEP_TRIGGERS.some((kw) => combined.includes(kw));
+  if (!isSwim && !isExercise && !isSleep) return;
 
-  const type = isSwim ? "swim" : "exercise";
-  const label = isSwim ? "수영" : "운동";
+  const type = isSwim ? "swim" : isExercise ? "exercise" : "sleep";
+  const label = isSwim ? "수영" : isExercise ? "운동" : "취침 중";
 
   let until: string | null = null;
-  const timeMatch = combined.match(/(\d{1,2})시\s*(?:에|까지|쯤)?\s*(?:끝날|끝나|나올|올게|돌아올)/);
-  if (timeMatch) {
-    const hour = Number.parseInt(timeMatch[1], 10);
-    until = `${String(hour).padStart(2, "0")}:00`;
+  if (!isSleep) {
+    const timeMatch = combined.match(/(\d{1,2})시\s*(?:에|까지|쯤)?\s*(?:끝날|끝나|나올|올게|돌아올)/);
+    if (timeMatch) {
+      const hour = Number.parseInt(timeMatch[1], 10);
+      until = `${String(hour).padStart(2, "0")}:00`;
+    }
   }
+  // sleep block: until=null (indefinite — 아침 스케줄 갱신 시 자동 해제)
 
   const state = readSelfBusyState();
-  if (state.current_block && state.current_block.type && state.current_block.type !== "free") return;
+  if (state.current_block && state.current_block.type && !["free", "sleep"].includes(state.current_block.type)) return;
 
   state.current_block = { type, label, until, started_at: new Date().toISOString() };
   saveSelfBusyState(state);
@@ -1823,8 +1828,31 @@ let messageQueue: Promise<void> = Promise.resolve();
 
 // === Woongbbi batch accumulator (enabled when CODEX_TELEGRAM_BATCH_WOONGBBI=1) ===
 const batchWoongbbiEnabled: boolean = Boolean(process.env.CODEX_TELEGRAM_BATCH_WOONGBBI);
+const DEBOUNCE_MS = parseInt(process.env.CODEX_TELEGRAM_DEBOUNCE_MS ?? "0", 10);
 const characterAccumulator: any[] = [];
 let characterDraining = false;
+let characterDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+// 디바운스 포함 drain 스케줄러 — 새 메시지마다 타이머 리셋, drain 중이면 완료 후 재실행
+function scheduleCharacterDrain(token: string): void {
+  if (characterDraining) return; // drain 완료 후 finally에서 잔여분 재스케줄
+  if (characterDebounceTimer !== null) clearTimeout(characterDebounceTimer);
+  const delay = DEBOUNCE_MS > 0 ? DEBOUNCE_MS : 0;
+  characterDebounceTimer = setTimeout(async () => {
+    characterDebounceTimer = null;
+    if (characterDraining) return;
+    characterDraining = true;
+    try {
+      while (characterAccumulator.length > 0) {
+        const batch = characterAccumulator.splice(0);
+        await processWoongbbiBatch(token, batch);
+      }
+    } finally {
+      characterDraining = false;
+      if (characterAccumulator.length > 0) scheduleCharacterDrain(token);
+    }
+  }, delay);
+}
 
 async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<void> {
   if (rawMessages.length === 0) return;
@@ -1915,6 +1943,7 @@ async function processWoongbbiBatch(token: string, rawMessages: any[]): Promise<
       incoming_image_count: allImages.length,
       snapshot_reason: snapshot?.recommended_response_reason ?? null,
       snapshot_path_hint: snapshot?.recommended_response_path ?? null,
+      message_ts: rawMessages[0]?.date ? rawMessages[0].date * 1000 : undefined,
     });
     const finalWorkerResult = workerResult;
 
@@ -2245,10 +2274,7 @@ function handleMessage(token: string, message: any): Promise<void> {
     const isModeCmd = Boolean(requestedModeFromText(text));
     if (!isModeCmd && readModeState() === "character") {
       characterAccumulator.push(message);
-      if (!characterDraining) {
-        characterDraining = true;
-        void drainWoongbbiAccumulator(token);
-      }
+      scheduleCharacterDrain(token);
       return Promise.resolve();
     }
   }
