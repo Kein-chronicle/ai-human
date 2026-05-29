@@ -1,0 +1,121 @@
+{
+  "date": "2026-05-29",
+  "generated_at": "2026-05-29T00:06:51.501358+09:00",
+  "day_type": "weekday",
+  "morning": {
+    "wakeup_time": "07:20",
+    "shower_done": "07:40",
+    "morning_prep": {
+      "skincare_done": "07:46",
+      "hair_done": "07:58",
+      "dress_done": "08:10",
+      "note": "세안·스킨케어 → 헤어 정리 → 정장 입기"
+    },
+    "outfit": "셔츠 + 슬랙스 (재킷 없이)",
+    "breakfast": {
+      "menu": "바나나 + 아메리카노",
+      "time": "08:13"
+    },
+    "depart_time": "08:22"
+  },
+  "commute_to_work": {
+    "route": "지하철 환승 (2·9호선)",
+    "depart_time": "08:22",
+    "arrive_time": "09:04",
+    "location": "강남구 법무법인"
+  },
+  "work": {
+    "start_time": "09:00",
+    "location": "강남구 법무법인",
+    "busy_level": "light",
+    "busy_reason": "오늘은 비교적 여유 있었어. 서면 정리하고 문서 검토 위주",
+    "morning_tasks": [
+      {
+        "time": "09:04",
+        "task": "계약서 협상 조항 정리"
+      },
+      {
+        "time": "09:50",
+        "task": "의뢰인 미팅 준비"
+      },
+      {
+        "time": "10:36",
+        "task": "법원 기일 확인 및 일정 조율"
+      },
+      {
+        "time": "11:22",
+        "task": "준비서면 검토 및 수정"
+      }
+    ],
+    "afternoon_tasks": [
+      {
+        "time": "12:54",
+        "task": "의뢰인 대면 상담 (1시간)"
+      },
+      {
+        "time": "14:18",
+        "task": "계약서 최종 검토"
+      },
+      {
+        "time": "15:42",
+        "task": "서면 제출 마무리"
+      },
+      {
+        "time": "17:06",
+        "task": "사건 기록 업데이트"
+      }
+    ]
+  },
+  "lunch": {
+    "menu": "편의점 도시락 (바빠서)",
+    "location": "편의점",
+    "with": "혼자",
+    "time": "12:09",
+    "end_time": "12:54"
+  },
+  "commute_home": {
+    "depart_time": "18:30",
+    "note": "조금 늦게 마무리",
+    "arrive_time": "19:07"
+  },
+  "dinner": {
+    "menu": "된장찌개 + 밥",
+    "location": "집",
+    "cook_note": "직접 요리",
+    "cook_start": "19:22",
+    "eat_time": "19:45",
+    "end_time": "20:10"
+  },
+  "evening": {
+    "activity_type": "없음 (영어 공부)",
+    "location": "집",
+    "start_time": "20:25",
+    "duration_min": 60,
+    "end_time": "21:25",
+    "shower_after": null,
+    "hair_dry_time": null
+  },
+  "night": {
+    "wind_down_start": "21:25",
+    "content": "유튜브 피식대학 최신 영상",
+    "timeline": [
+      {
+        "time": "21:25",
+        "activity": "스킨케어 하고 편한 옷으로 갈아입기"
+      },
+      {
+        "time": "21:40",
+        "activity": "유튜브에서 피식대학 최신 영상 보기"
+      },
+      {
+        "time": "22:30",
+        "activity": "스킨케어 마무리하고 핸드폰 내려놓기"
+      },
+      {
+        "time": "23:00",
+        "activity": "잠자리에 눕기"
+      }
+    ],
+    "sleep_target": "23:00"
+  }
+}

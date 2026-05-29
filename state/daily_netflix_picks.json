@@ -1,0 +1,35 @@
+{
+  "date": "2026-05-29",
+  "character": "eunwoo",
+  "picks": [
+    {
+      "title": "유재석 캠프",
+      "platform": "Netflix",
+      "source": "netflix_korea_channel",
+      "mention_hint": "유재석 캠프 재밌다는 거 들었어. 아직 안 봤어?",
+      "shareable": true
+    },
+    {
+      "title": "원더풀스",
+      "platform": "Netflix",
+      "source": "netflix_korea_channel",
+      "mention_hint": "원더풀스 재밌다는 거 들었어. 아직 안 봤어?",
+      "shareable": true
+    },
+    {
+      "title": "레이디스 퍼스트: 거꾸로 가는 남자",
+      "platform": "Netflix",
+      "source": "netflix_korea_channel",
+      "mention_hint": "레이디스 퍼스트: 거꾸로 가는 남자 한번 봐봐. 생각보다 재밌어",
+      "shareable": true
+    },
+    {
+      "title": "위키드",
+      "platform": "Netflix",
+      "source": "netflix_korea_channel",
+      "mention_hint": "위키드 한번 봐봐. 생각보다 재밌어",
+      "shareable": true
+    }
+  ],
+  "generated_at": "2026-05-29T00:06:52.683905"
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "managed_by": "proactive_sender",
-  "current_date": "2026-05-27",
+  "current_date": "2026-05-29",
   "current_time_block": "daytime",
   "last_known_platform": "YouTube",
   "last_known_format": "longform",
@@ -14,5 +14,5 @@
     "야구 하이라이트 다시 보고 있었어",
     "다큐 같은 거 틀어놓고 멍하니 보고 있었어"
   ],
-  "updated_at": "2026-05-27T10:07:00.681Z"
+  "updated_at": "2026-05-29T00:06:51.526Z"
 }

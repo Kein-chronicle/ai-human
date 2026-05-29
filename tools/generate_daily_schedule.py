@@ -7,6 +7,32 @@ import json, random, datetime, os, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT_PATH = os.path.join(ROOT, "state", "daily_schedule_state.json")
+MEDIA_HISTORY_PATH = os.path.join(ROOT, "state", "media_pick_history.json")
+
+
+def pick_without_repeat(pool: list, history_key: str, days_avoid: int = 7) -> dict:
+    try:
+        with open(MEDIA_HISTORY_PATH) as f:
+            history = json.load(f)
+    except Exception:
+        history = {}
+    today = datetime.date.today().isoformat()
+    recent = history.get(history_key, [])
+    cutoff = (datetime.date.today() - datetime.timedelta(days=days_avoid)).isoformat()
+    recent_titles = {r["title"] for r in recent if r.get("date", "") >= cutoff}
+    candidates = [p for p in pool if p.get("title", "") not in recent_titles]
+    if not candidates:
+        candidates = pool
+    seed = int(today.replace("-", "")) % len(candidates)
+    chosen = candidates[seed]
+    recent.append({"date": today, "title": chosen.get("title", "")})
+    history[history_key] = recent[-30:]
+    try:
+        with open(MEDIA_HISTORY_PATH, "w") as f:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+    return chosen
 
 # ── Data pools ─────────────────────────────────────────────────────────────────
 
@@ -130,11 +156,31 @@ WEEKDAY_EXERCISE = [
 ]
 
 NIGHT_OTT_PICKS = [
-    {"platform": "넷플릭스", "title": "보던 드라마 다음화"},
-    {"platform": "유튜브", "title": "시사/뉴스 채널 정주행"},
-    {"platform": "넷플릭스", "title": "다큐멘터리 한 편"},
-    {"platform": "유튜브", "title": "밤에 가볍게 보는 예능"},
-    {"platform": "넷플릭스", "title": "미드 or 영화"},
+    # 드라마/영화
+    {"platform": "넷플릭스", "title": "보던 드라마 다음화", "kind": "drama", "detail": ""},
+    {"platform": "넷플릭스", "title": "미드 정주행 시작", "kind": "drama", "detail": "영미 드라마 시즌1"},
+    {"platform": "넷플릭스", "title": "범죄 스릴러 영화 한 편", "kind": "movie", "detail": "법정 스릴러"},
+    {"platform": "웨이브", "title": "주말 못 본 한드 몰아보기", "kind": "drama", "detail": ""},
+    # 시사/경제/사회
+    {"platform": "유튜브", "title": "삼프로TV 오늘 방송 다시보기", "kind": "news", "detail": "삼프로TV 경제 이슈"},
+    {"platform": "유튜브", "title": "뉴스공장 하이라이트 클립", "kind": "news", "detail": "시사 이슈 분석"},
+    {"platform": "유튜브", "title": "1분미래 영상 몇 개", "kind": "news", "detail": "미래 트렌드 유튜버"},
+    {"platform": "유튜브", "title": "슈카월드 요즘 영상", "kind": "news", "detail": "경제/사회 이슈 분석"},
+    # 스포츠
+    {"platform": "유튜브", "title": "오늘 야구 하이라이트", "kind": "sports", "detail": "KBO 하이라이트"},
+    {"platform": "유튜브", "title": "NBA 명장면 쇼츠 보기", "kind": "sports", "detail": "NBA 슈퍼플레이 쇼츠"},
+    {"platform": "유튜브", "title": "EPL 골 모음 클립", "kind": "sports", "detail": "프리미어리그 골장면"},
+    # 예능
+    {"platform": "유튜브", "title": "유퀴즈 명장면 클립 보기", "kind": "variety", "detail": "유퀴즈온더블럭 클립"},
+    {"platform": "유튜브", "title": "피식대학 최신 영상", "kind": "variety", "detail": "피식대학 코미디"},
+    {"platform": "넷플릭스", "title": "가볍게 보는 예능 한 편", "kind": "variety", "detail": ""},
+    # 다큐/지식
+    {"platform": "유튜브", "title": "역사 다큐 하나 틀어놓기", "kind": "documentary", "detail": "한국사/세계사 다큐"},
+    {"platform": "넷플릭스", "title": "사회 이슈 다큐멘터리", "kind": "documentary", "detail": ""},
+    {"platform": "유튜브", "title": "테크 리뷰 채널 신상 영상", "kind": "tech", "detail": "삼성/애플 신제품 리뷰"},
+    # 힐링/음악
+    {"platform": "유튜브", "title": "재즈 바 플레이리스트 배경음", "kind": "music", "detail": "저녁 재즈 플레이리스트"},
+    {"platform": "유튜브", "title": "로파이 음악 틀어놓고 뒹굴기", "kind": "music", "detail": "lofi hip hop 집중"},
 ]
 
 NIGHT_READING_PICKS = [
@@ -252,7 +298,7 @@ def generate_weekday(date_str: str) -> dict:
         night_start = exercise_end if exercise["duration_min"] > 0 else hm(dinner_end, 30)
 
     sleep = random.choice(SLEEP_TARGET)
-    ott = random.choice(NIGHT_OTT_PICKS)
+    ott = pick_without_repeat(NIGHT_OTT_PICKS, "night_ott")
     ns_m = int(night_start.split(":")[0]) * 60 + int(night_start.split(":")[1])
     st_m = int(sleep.split(":")[0]) * 60 + int(sleep.split(":")[1])
     if st_m <= ns_m:
@@ -406,6 +452,18 @@ def main() -> None:
         print(f"  offwork: {schedule['commute_home']['depart_time']} ({schedule['commute_home']['note']})")
     print(f"  dinner: {schedule['dinner']['menu']}")
     print(f"  sleep: {schedule['night']['sleep_target']}")
+
+    # 오늘의 Netflix picks 실제 검색 (백그라운드)
+    try:
+        import subprocess as _sp
+        _sp.Popen(
+            [sys.executable, os.path.join(os.path.dirname(__file__), "fetch_netflix_picks.py")],
+            stdout=open(os.path.join(ROOT, "state", "netflix_fetch.log"), "a"),
+            stderr=_sp.STDOUT,
+        )
+        print("[daily_schedule] Netflix picks 검색 시작 (백그라운드)")
+    except Exception as e:
+        print(f"[daily_schedule] Netflix picks 검색 실패: {e}")
 
 
 if __name__ == "__main__":

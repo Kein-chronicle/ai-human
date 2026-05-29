@@ -1,10 +1,20 @@
 {
-  "schema_version": 1,
-  "managed_by": "bridge",
-  "last_received_at": null,
-  "image_description": null,
-  "emotional_tone": null,
-  "context_tags": [],
-  "responded": true,
-  "notes": "상대방이 보낸 사진 분석 맥락 — bridge가 업데이트, worker가 반응에 활용"
+  "updated_at": "2026-05-27T14:39:54.474Z",
+  "telegram_user": "kind770su",
+  "mode": "character",
+  "text": "요새 손글씨 쓰고 있는데 내가 내글씨로 힐링되고있엉 유익한거같앙",
+  "images": [
+    {
+      "kind": "photo",
+      "path": "/Users/kein/Projects/lee-eunwoo/images/incoming/2026-05-27/233954_telegram_photo_AQADlRBrG9QpuVR-.jpg",
+      "fileId": "AgACAgUAAxkBAAIBnGoXAjjKP6396yQ64PFsDNuGo9lEAAKVEGsb1Cm5VGttxR2CErSOAQADAgADeQADOwQ",
+      "fileUniqueId": "AQADlRBrG9QpuVR-",
+      "width": 588,
+      "height": 1280,
+      "fileSize": 85377,
+      "mimeType": "image/jpeg",
+      "telegramFilePath": "photos/file_2.jpg",
+      "caption": "요새 손글씨 쓰고 있는데 내가 내글씨로 힐링되고있엉 유익한거같앙"
+    }
+  ]
 }

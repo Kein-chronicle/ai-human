@@ -2,9 +2,9 @@
   "schema_version": 1,
   "managed_by": "proactive_sender",
   "current_date": "2026-05-29",
-  "current_time_block": "work_afternoon",
+  "current_time_block": "evening_commute",
   "surface_mood": "neutral",
-  "energy_level": 65,
+  "energy_level": 55,
   "affection_level": 77,
   "reply_variance_profile": "detailed",
   "blocked_phrases": [],
@@ -18,5 +18,5 @@
   },
   "weather_summary": "포근하고 좋은 날씨",
   "day_satisfaction_label": "neutral_day",
-  "last_updated_at": "2026-05-29T15:28:39.621Z"
+  "last_updated_at": "2026-05-29T20:08:51.520Z"
 }

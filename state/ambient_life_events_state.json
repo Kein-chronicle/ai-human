@@ -2,39 +2,29 @@
   "schema_version": 1,
   "timezone": "Asia/Seoul",
   "managed_by": "proactive_sender",
-  "current_date": "2026-05-27",
+  "current_date": "2026-05-29",
   "selected_persistent_details": [
     {
       "category": "room",
-      "id": "suit_on_chair",
-      "summary": "퇴근 후 수트 재킷을 의자 등받이에 걸어뒀다"
+      "id": "law_books_open",
+      "summary": "소파 옆 사이드테이블에 법전이 펼쳐져 있다"
     },
     {
-      "category": "desk",
-      "id": "cold_coffee",
-      "summary": "책상 위 텀블러 커피가 식어가고 있다"
+      "category": "room",
+      "id": "phone_charging",
+      "summary": "잠들기 전 폰을 침대 옆에 꽂아두고 잔다"
     },
     {
-      "category": "carry",
-      "id": "briefcase_scratch",
-      "summary": "서류가방 손잡이가 살짝 닳아 있다"
+      "category": "room",
+      "id": "reading_lamp_on",
+      "summary": "밤에는 큰 조명 끄고 독서등만 켜둔다"
     }
   ],
   "detail_pool": [
     {
       "category": "room",
-      "id": "suit_on_chair",
-      "summary": "퇴근 후 수트 재킷을 의자 등받이에 걸어뒀다"
-    },
-    {
-      "category": "desk",
-      "id": "cold_coffee",
-      "summary": "책상 위 텀블러 커피가 식어가고 있다"
-    },
-    {
-      "category": "carry",
-      "id": "briefcase_scratch",
-      "summary": "서류가방 손잡이가 살짝 닳아 있다"
+      "id": "law_books_open",
+      "summary": "소파 옆 사이드테이블에 법전이 펼쳐져 있다"
     },
     {
       "category": "room",
@@ -47,9 +37,9 @@
       "summary": "밤에는 큰 조명 끄고 독서등만 켜둔다"
     },
     {
-      "category": "carry",
-      "id": "mint_tablet",
-      "summary": "법정 전에 민트 사탕을 하나 챙겨 먹는 습관이 있다"
+      "category": "desk",
+      "id": "cold_coffee",
+      "summary": "책상 위 텀블러 커피가 식어가고 있다"
     },
     {
       "category": "carry",
@@ -58,8 +48,13 @@
     },
     {
       "category": "room",
-      "id": "law_books_open",
-      "summary": "소파 옆 사이드테이블에 법전이 펼쳐져 있다"
+      "id": "shoes_by_door",
+      "summary": "현관에 구두가 반듯하게 정렬돼 있다"
+    },
+    {
+      "category": "room",
+      "id": "suit_on_chair",
+      "summary": "퇴근 후 수트 재킷을 의자 등받이에 걸어뒀다"
     },
     {
       "category": "desk",
@@ -67,11 +62,16 @@
       "summary": "모니터 옆에 포스트잇이 몇 장 붙어 있다"
     },
     {
-      "category": "room",
-      "id": "shoes_by_door",
-      "summary": "현관에 구두가 반듯하게 정렬돼 있다"
+      "category": "carry",
+      "id": "mint_tablet",
+      "summary": "법정 전에 민트 사탕을 하나 챙겨 먹는 습관이 있다"
+    },
+    {
+      "category": "carry",
+      "id": "briefcase_scratch",
+      "summary": "서류가방 손잡이가 살짝 닳아 있다"
     }
   ],
-  "last_refreshed_at": "2026-05-27T00:06:59.155Z",
+  "last_refreshed_at": "2026-05-28T15:06:51.527Z",
   "refresh_rule": "하루 시작(07시)에 detail_pool에서 2-3개 랜덤 선택 → selected_persistent_details에 저장. proactive-sender가 maybeRefreshAmbientDetails()로 처리."
 }

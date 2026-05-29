@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "managed_by": "proactive_sender",
-  "current_date": "2026-05-27",
-  "current_profile": "brief",
+  "current_date": "2026-05-29",
+  "current_profile": "detailed",
   "target_sentence_range": [
-    1,
-    2
+    3,
+    5
   ],
-  "punctuation_style": "minimal",
-  "last_updated_at": "2026-05-27T09:47:00.512Z",
+  "punctuation_style": "normal",
+  "last_updated_at": "2026-05-29T00:06:51.525Z",
   "notes": "시간대·컨디션에 따라 답장 길이·문장 밀도를 흔들기 위한 상태"
 }

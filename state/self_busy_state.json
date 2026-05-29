@@ -1,10 +1,10 @@
 {
   "current_block": {
-    "type": "work",
-    "label": "업무 중",
-    "until": "19:00",
-    "started_at": "2026-05-27T01:47:00.826Z"
+    "type": "free",
+    "label": "자유 시간",
+    "until": null,
+    "started_at": "2026-05-29T11:08:51.504Z"
   },
-  "updated_at": "2026-05-27T01:47:00.826Z",
+  "updated_at": "2026-05-29T11:08:51.504Z",
   "updated_by": "proactive_sender"
 }

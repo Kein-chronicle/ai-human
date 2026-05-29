@@ -1,0 +1,9 @@
+{
+  "created_at": "2026-05-29T01:29:08.413Z",
+  "send_after": "2026-05-29T01:41:08.413Z",
+  "trigger_text": "금방 다녀올게",
+  "delay_minutes": 12,
+  "followup_ctx": "아까 금방 다녀온다고 했어. 돌아왔으니까 자연스럽게 짧게 말 걸어줘.",
+  "status": "sent",
+  "resolved_at": "2026-05-29T01:41:20.119Z"
+}

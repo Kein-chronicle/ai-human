@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
   "managed_by": "proactive_sender",
-  "current_date": "2026-05-27",
-  "current_time_block": "work_morning",
-  "outfit_context": "full_suit",
-  "top": "수트 재킷 + 드레스 셔츠 + 타이",
+  "current_date": "2026-05-29",
+  "current_time_block": "evening_commute",
+  "outfit_context": "suit_loosened",
+  "top": "수트 재킷 손에 들거나 어깨에, 셔츠 단추 1개 풀림",
   "bottom": "슬랙스",
   "footwear": "구두",
   "outerwear": null,
-  "hair_state": "neat_work_style",
-  "hair_detail": "정돈된 업무 헤어",
-  "held_item": "서류 또는 폰",
-  "last_updated_at": "2026-05-27T10:07:00.680Z"
+  "hair_state": "slightly_loosened",
+  "hair_detail": "퇴근 후 조금 풀어진 헤어",
+  "held_item": "가방 + 재킷",
+  "last_updated_at": "2026-05-29T18:08:40.320Z"
 }

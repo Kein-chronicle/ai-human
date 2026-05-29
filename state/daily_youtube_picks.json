@@ -1,0 +1,131 @@
+{
+  "date": "2026-05-28",
+  "character": "eunwoo",
+  "picks": [
+    {
+      "title": "영국 노동당은 왜 역사적인 대패를 당했는가",
+      "url": "https://www.youtube.com/watch?v=aD_K49LwobI",
+      "channel": "슈카월드",
+      "duration_s": 1646,
+      "is_shorts": false,
+      "category": "시사경제",
+      "shareable": false,
+      "proactive_hint": "나 영국 노동당은 왜 역사적인 대패를 당했는가 보고 있어"
+    },
+    {
+      "title": "20년 만에 만나 뵙게 되었습니다",
+      "url": "https://www.youtube.com/watch?v=QylxXit0xRw",
+      "channel": "피식대학Psick Univ",
+      "duration_s": 820,
+      "is_shorts": false,
+      "category": "웃긴영상",
+      "shareable": true,
+      "proactive_hint": "야 이거 봤어? 20년 만에 만나 뵙게 되었습니다 ㅋㅋ"
+    },
+    {
+      "title": "서점",
+      "url": "https://www.youtube.com/watch?v=fwBGVX5NbsA",
+      "channel": "숏박스",
+      "duration_s": 402,
+      "is_shorts": false,
+      "category": "웃긴영상",
+      "shareable": true,
+      "proactive_hint": "야 이거 봤어? 서점 ㅋㅋ"
+    },
+    {
+      "title": "안 보시면 손해가 맞습니다.",
+      "url": "https://www.youtube.com/watch?v=vJT_Hs4VHMI",
+      "channel": "서울 사는 남자",
+      "duration_s": 1181,
+      "is_shorts": false,
+      "category": "맛집",
+      "shareable": true,
+      "proactive_hint": "야 이거 봤어? 안 보시면 손해가 맞습니다. ㅋㅋ"
+    },
+    {
+      "title": "저녁 점호",
+      "url": "https://www.youtube.com/watch?v=cJiYXnMtYl0",
+      "channel": "숏박스",
+      "duration_s": 415,
+      "is_shorts": false,
+      "category": "웃긴영상",
+      "shareable": true,
+      "proactive_hint": "방금 이거 보면서 수정이 생각났어 → https://www.youtube.com/watch?v=cJiYXnMtYl0"
+    },
+    {
+      "title": "최대 핫플 성수도 결국..? 2025 성수동 알아보기",
+      "url": "https://www.youtube.com/watch?v=p4WcwQBqq8g",
+      "channel": "셜록현준",
+      "duration_s": 1165,
+      "is_shorts": false,
+      "category": "맛집",
+      "shareable": true,
+      "proactive_hint": "이거 같이 보고 싶어서 → https://www.youtube.com/watch?v=p4WcwQBqq8g"
+    }
+  ],
+  "share_picks": [
+    {
+      "title": "서점",
+      "url": "https://www.youtube.com/watch?v=fwBGVX5NbsA",
+      "channel": "숏박스",
+      "duration_s": 402,
+      "is_shorts": false,
+      "category": "웃긴영상",
+      "shareable": true,
+      "proactive_hint": "야 이거 봤어? 서점 ㅋㅋ"
+    },
+    {
+      "title": "저녁 점호",
+      "url": "https://www.youtube.com/watch?v=cJiYXnMtYl0",
+      "channel": "숏박스",
+      "duration_s": 415,
+      "is_shorts": false,
+      "category": "웃긴영상",
+      "shareable": true,
+      "proactive_hint": "방금 이거 보면서 수정이 생각났어 → https://www.youtube.com/watch?v=cJiYXnMtYl0"
+    },
+    {
+      "title": "안 보시면 손해가 맞습니다.",
+      "url": "https://www.youtube.com/watch?v=vJT_Hs4VHMI",
+      "channel": "서울 사는 남자",
+      "duration_s": 1181,
+      "is_shorts": false,
+      "category": "맛집",
+      "shareable": true,
+      "proactive_hint": "야 이거 봤어? 안 보시면 손해가 맞습니다. ㅋㅋ"
+    },
+    {
+      "title": "최대 핫플 성수도 결국..? 2025 성수동 알아보기",
+      "url": "https://www.youtube.com/watch?v=p4WcwQBqq8g",
+      "channel": "셜록현준",
+      "duration_s": 1165,
+      "is_shorts": false,
+      "category": "맛집",
+      "shareable": true,
+      "proactive_hint": "이거 같이 보고 싶어서 → https://www.youtube.com/watch?v=p4WcwQBqq8g"
+    },
+    {
+      "title": "20년 만에 만나 뵙게 되었습니다",
+      "url": "https://www.youtube.com/watch?v=QylxXit0xRw",
+      "channel": "피식대학Psick Univ",
+      "duration_s": 820,
+      "is_shorts": false,
+      "category": "웃긴영상",
+      "shareable": true,
+      "proactive_hint": "야 이거 봤어? 20년 만에 만나 뵙게 되었습니다 ㅋㅋ"
+    }
+  ],
+  "solo_picks": [
+    {
+      "title": "영국 노동당은 왜 역사적인 대패를 당했는가",
+      "url": "https://www.youtube.com/watch?v=aD_K49LwobI",
+      "channel": "슈카월드",
+      "duration_s": 1646,
+      "is_shorts": false,
+      "category": "시사경제",
+      "shareable": false,
+      "proactive_hint": "나 영국 노동당은 왜 역사적인 대패를 당했는가 보고 있어"
+    }
+  ],
+  "generated_at": "2026-05-28T20:50:42.111938"
+}
