@@ -1492,6 +1492,16 @@ async function checkPendingProactivePhoto(token: string): Promise<void> {
   try { trigger = JSON.parse(readFileSync(pendingProactivePhotoFile, "utf8")); } catch { return; }
   if (trigger?.status !== "pending") return;
   if (repliesMuted()) return;
+  // 이미지 생성 락 체크
+  try {
+    const imgSettings = JSON.parse(readFileSync(join(cwd, "state", "image_generation_settings.json"), "utf8"));
+    if (imgSettings?.generation_enabled === false) {
+      trigger.status = "skipped_generation_disabled";
+      writeFileSync(pendingProactivePhotoFile, JSON.stringify(trigger, null, 2) + "\n", { mode: 0o600 });
+      console.error(`[proactive-photo] skipped: generation_enabled=false`);
+      return;
+    }
+  } catch { /* 파일 없으면 계속 진행 */ }
 
   // 대화 중이면 최대 30분 대기 후 포기
   const ageMs = Date.now() - new Date(trigger.created_at).getTime();
