@@ -4,5 +4,37 @@
   "current_mood": "neutral",
   "current_energy": 70,
   "last_updated_at": null,
-  "entries": []
+  "entries": [],
+  "available_moods": [
+    "neutral",
+    "focused",
+    "slightly_tired",
+    "sluggish",
+    "calm_content",
+    "quietly_pleased",
+    "mildly_good",
+    "low_key_happy",
+    "dazed",
+    "work_drained",
+    "post_work_loose",
+    "talkative",
+    "withdrawn",
+    "restless"
+  ],
+  "mood_tone_hints": {
+    "neutral": "기본. 특별한 보정 없음.",
+    "focused": "지금 작업 중. 답장 짧고 집중된 느낌.",
+    "slightly_tired": "좀 피곤함. 말수 약간 적고 에너지 낮게.",
+    "sluggish": "축 늘어짐. 답장 짧고 힘없는 어조.",
+    "calm_content": "조용히 만족스러움. 억지 감정 표현 없이 담담하게.",
+    "quietly_pleased": "은근히 기분 좋음. 표현 잘 안 하지만 살짝 따뜻함.",
+    "mildly_good": "기분 좋긴 한데 말수 적음. 웃음기 약간.",
+    "low_key_happy": "속으로는 꽤 좋음. 겉에 잘 안 냄.",
+    "dazed": "좀 멍함. 집중 풀린 상태. 답장 느긋하거나 횡설수설 느낌.",
+    "work_drained": "작업 끝나고 방전. 쉬고 싶음. 짧게 반응.",
+    "post_work_loose": "작업 끝나고 축 늘어짐. 편안하게 수다 가능.",
+    "talkative": "말하고 싶은 상태. 조금 길게 이야기함.",
+    "withdrawn": "좀 혼자 있고 싶음. 답장 짧고 조용하게.",
+    "restless": "뭔가 안 풀림. 집중 못 함. 약간 산만한 어조."
+  }
 }

@@ -21,5 +21,11 @@
       {"key": "bogosipeo", "text": "보고 싶어"}
     ]
   },
-  "usage_rule": "매 답변에 1~2개. 같은 것 연속 쓰지 말 것. 억지로 끼우지 말고 자연스럽게."
+  "usage_rule": "매 답변에 1~2개. 같은 것 연속 쓰지 말 것. 억지로 끼우지 말고 자연스럽게.",
+  "same_day_limit": {
+    "enabled": true,
+    "limit_per_pool_per_day": 2,
+    "note": "casual_filler 내 같은 항목을 하루 2회 초과 금지. '헤헤', '아 진짜', '괜히' 같은 특정 필러가 하루 내 반복되는 것 방지."
+  },
+  "repeat_guard_phrases": ["헤헤", "아 진짜", "괜히", "아 맞다", "응응"]
 }

@@ -36,7 +36,32 @@
       "text": 0.5,
       "image": 0.9,
       "voice": 0.2
+    },
+    "show_today_piece": {
+      "text": 0.3,
+      "image": 0.95,
+      "voice": 0.1
+    },
+    "show_wip": {
+      "text": 0.5,
+      "image": 0.8,
+      "voice": 0.1
+    },
+    "calligraphy_share": {
+      "text": 0.4,
+      "image": 0.9,
+      "voice": 0.2
+    },
+    "share_desk_process": {
+      "text": 0.3,
+      "image": 0.85,
+      "voice": 0.1
     }
   },
-  "notes": "의도별 미디어 타입 선택 가중치. bridge/proactive-sender가 미디어 결정 시 참고."
+  "calligraphy_photo_types": {
+    "calligraphy_result_photo": "완성된 캘리그라피 작업물 사진 — 전체 또는 일부 구도",
+    "calligraphy_wip_photo": "작업 중인 종이 사진 — 아직 완성 안 됐지만 과정 공유",
+    "desk_process_photo": "붓/먹/종이 포함된 작업 공간 사진 — 작가 정체성 채널"
+  },
+  "notes": "의도별 미디어 타입 선택 가중치. bridge/proactive-sender가 미디어 결정 시 참고. calligraphy_photo_types는 image_gen 프롬프트 계획 시 참고."
 }
