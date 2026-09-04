@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "managed_by": "character_worker",
-  "date": "2026-06-09",
+  "date": "2026-08-27",
   "share_status": "shareable_partial_piece",
-  "today_piece_description": "연습 중인 붓글씨 한 장",
-  "share_context": "",
-  "last_updated_at": null,
+  "today_piece_description": "‘천천히’를 쓴 붓글씨 연습 한 장",
+  "share_context": "저녁에 작업을 마무리하며 일부만 WIP로 공유",
+  "last_updated_at": "2026-08-27T21:36:00+09:00",
   "share_status_options": {
     "shareable_finished_piece": "완성본 공유 가능 — 전체 보여줘도 됨",
     "shareable_partial_piece": "부분 공개 가능 — 일부만 보여주거나 WIP 느낌으로",

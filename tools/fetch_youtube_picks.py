@@ -2,7 +2,7 @@
 """
 실제 YouTube 영상 검색 후 오늘의 picks를 state/daily_youtube_picks.json에 저장.
 generate_daily_schedule.py에서 호출됨.
-응우(이은우, 33세, 변호사) 캐릭터 취향 기반.
+응우(이은우, 33세, 캘리그라피 작가) 캐릭터 취향 기반.
 """
 import json, subprocess, datetime, os, random, sys
 
@@ -24,7 +24,7 @@ SHARE_QUERIES = [
     ("맛집", "서울 감성 카페 브이로그 2025"),
     ("맛집", "요즘 핫한 팝업스토어 서울"),
     # 공감
-    ("공감", "30대 직장인 공감 영상"),
+    ("공감", "30대 남성 프리랜서 공감 영상"),
     ("공감", "연애 공감 웃긴 쇼츠"),
     # 재밌는 콘텐츠
     ("예능", "유퀴즈 명장면 클립 웃긴"),

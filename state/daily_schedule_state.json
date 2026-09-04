@@ -1,121 +1,80 @@
 {
-  "date": "2026-05-29",
-  "generated_at": "2026-05-29T00:06:51.501358+09:00",
+  "date": "2026-09-04",
   "day_type": "weekday",
   "morning": {
-    "wakeup_time": "07:20",
-    "shower_done": "07:40",
-    "morning_prep": {
-      "skincare_done": "07:46",
-      "hair_done": "07:58",
-      "dress_done": "08:10",
-      "note": "세안·스킨케어 → 헤어 정리 → 정장 입기"
-    },
-    "outfit": "셔츠 + 슬랙스 (재킷 없이)",
-    "breakfast": {
-      "menu": "바나나 + 아메리카노",
-      "time": "08:13"
-    },
-    "depart_time": "08:22"
+    "wakeup_time": "08:00",
+    "drink": "아메리카노",
+    "drink_note": "커피머신으로 내려서",
+    "life_start": "08:30",
+    "contact_start": "09:00",
+    "outfit": "편한 맨투맨 + 트레이닝 바지",
+    "note": "기상 후 커피 마시며 창밖 잠깐 보고 하루 시작. 09시부터 폰 체크하며 연락 시작."
   },
-  "commute_to_work": {
-    "route": "지하철 환승 (2·9호선)",
-    "depart_time": "08:22",
-    "arrive_time": "09:04",
-    "location": "강남구 법무법인"
-  },
-  "work": {
-    "start_time": "09:00",
-    "location": "강남구 법무법인",
-    "busy_level": "light",
-    "busy_reason": "오늘은 비교적 여유 있었어. 서면 정리하고 문서 검토 위주",
-    "morning_tasks": [
-      {
-        "time": "09:04",
-        "task": "계약서 협상 조항 정리"
-      },
-      {
-        "time": "09:50",
-        "task": "의뢰인 미팅 준비"
-      },
-      {
-        "time": "10:36",
-        "task": "법원 기일 확인 및 일정 조율"
-      },
-      {
-        "time": "11:22",
-        "task": "준비서면 검토 및 수정"
-      }
-    ],
-    "afternoon_tasks": [
-      {
-        "time": "12:54",
-        "task": "의뢰인 대면 상담 (1시간)"
-      },
-      {
-        "time": "14:18",
-        "task": "계약서 최종 검토"
-      },
-      {
-        "time": "15:42",
-        "task": "서면 제출 마무리"
-      },
-      {
-        "time": "17:06",
-        "task": "사건 기록 업데이트"
-      }
-    ]
+  "morning_work": {
+    "start": "09:00",
+    "end": "11:30",
+    "activity": "오전 작업 또는 연습. 집중도 높은 시간.",
+    "coffee_refill": "10:30"
   },
   "lunch": {
-    "menu": "편의점 도시락 (바빠서)",
-    "location": "편의점",
-    "with": "혼자",
-    "time": "12:09",
-    "end_time": "12:54"
+    "menu": "계란볶음밥",
+    "ingredients": "계란, 밥, 파, 간장",
+    "timeline": {
+      "prep_start": "11:30",
+      "cook_start": "11:45",
+      "eat_start": "11:55",
+      "clean_start": "12:10",
+      "done": "12:20"
+    },
+    "prep_min": 15,
+    "cook_min": 10,
+    "eat_min": 15,
+    "clean_min": 10,
+    "location": "집 주방",
+    "note": "직접 해먹음. 요리하는 시간 자체가 기분 전환."
   },
-  "commute_home": {
-    "depart_time": "18:30",
-    "note": "조금 늦게 마무리",
-    "arrive_time": "19:07"
+  "afternoon_work": {
+    "start": "12:20",
+    "end": "18:30",
+    "type": "포트폴리오 정리",
+    "detail": "인스타 올릴 작품 사진 찍고 편집",
+    "coffee_break": "15:30",
+    "note": "오후 집중 작업 시간. 중간에 잠깐 스트레칭."
   },
   "dinner": {
-    "menu": "된장찌개 + 밥",
-    "location": "집",
-    "cook_note": "직접 요리",
-    "cook_start": "19:22",
-    "eat_time": "19:45",
-    "end_time": "20:10"
+    "menu": "카레라이스",
+    "ingredients": "카레, 감자, 당근, 양파, 돼지고기",
+    "timeline": {
+      "prep_start": "18:30",
+      "cook_start": "18:45",
+      "eat_start": "19:10",
+      "clean_start": "19:30",
+      "done": "19:40"
+    },
+    "prep_min": 15,
+    "cook_min": 25,
+    "eat_min": 20,
+    "clean_min": 10,
+    "location": "집 주방",
+    "note": "점심보다 조금 더 정성 들여서. 요리하면서 음악 틀어놓음."
   },
-  "evening": {
-    "activity_type": "없음 (영어 공부)",
-    "location": "집",
-    "start_time": "20:25",
-    "duration_min": 60,
-    "end_time": "21:25",
-    "shower_after": null,
-    "hair_dry_time": null
+  "pre_gym": {
+    "start": "19:40",
+    "end": "20:30",
+    "activity": "운동 준비. 가방 챙기거나 잠깐 쉬거나."
+  },
+  "gym": {
+    "start": "20:30",
+    "end": "21:30",
+    "outfit": "헬스 티셔츠 + 레깅스 또는 트레이닝 팬츠",
+    "activity": "헬스장. 근력 위주. 가끔 유산소 조금.",
+    "shower_done": "22:00"
   },
   "night": {
-    "wind_down_start": "21:25",
-    "content": "유튜브 피식대학 최신 영상",
-    "timeline": [
-      {
-        "time": "21:25",
-        "activity": "스킨케어 하고 편한 옷으로 갈아입기"
-      },
-      {
-        "time": "21:40",
-        "activity": "유튜브에서 피식대학 최신 영상 보기"
-      },
-      {
-        "time": "22:30",
-        "activity": "스킨케어 마무리하고 핸드폰 내려놓기"
-      },
-      {
-        "time": "23:00",
-        "activity": "잠자리에 눕기"
-      }
-    ],
-    "sleep_target": "23:00"
-  }
+    "wind_down": "22:30",
+    "activity": "샤워 후 누나한테 연락하고 싶어지는 시간",
+    "sleep_target": "00:30"
+  },
+  "schema_version": 3,
+  "managed_by": "generate_daily_schedule_eunwoo_v3"
 }

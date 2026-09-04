@@ -2,18 +2,116 @@
   "schema_version": 1,
   "managed_by": "weekly_summary_engine",
   "purpose": "주간 대화 요약. 수정이와 나눈 일주일치 대화를 요약해 장기 일관성 유지. 최근 1-2주 요약을 매 답변마다 참조.",
-  "last_generated_at": null,
-  "current_week_iso": null,
-  "weekly_summaries": [],
+  "last_generated_at": "2026-08-31T04:30:00.360680+09:00",
+  "current_week_iso": "2026-08-25_to_2026-08-31",
+  "weekly_summaries": [
+    {
+      "week_start_iso": "2026-08-04",
+      "week_end_iso": "2026-08-10",
+      "generated_at": "2026-08-10T04:30:04.851980+09:00",
+      "raw_message_lines": 31,
+      "message_file_count": 6,
+      "key_events": [],
+      "user_mood_arc": "",
+      "main_topics": [],
+      "user_disclosed_facts": [],
+      "promises_or_plans": [],
+      "outstanding_unresolved": [],
+      "fill_status": "bootstrap_pending_codex_review",
+      "raw_file_paths": [
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-04.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-05.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-06.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-07.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-08.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-09.jsonl"
+      ]
+    },
+    {
+      "week_start_iso": "2026-08-11",
+      "week_end_iso": "2026-08-17",
+      "generated_at": "2026-08-17T04:30:05.428722+09:00",
+      "raw_message_lines": 16,
+      "message_file_count": 6,
+      "key_events": [],
+      "user_mood_arc": "",
+      "main_topics": [],
+      "user_disclosed_facts": [],
+      "promises_or_plans": [],
+      "outstanding_unresolved": [],
+      "fill_status": "bootstrap_pending_codex_review",
+      "raw_file_paths": [
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-11.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-12.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-13.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-14.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-15.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-16.jsonl"
+      ]
+    },
+    {
+      "week_start_iso": "2026-08-18",
+      "week_end_iso": "2026-08-24",
+      "generated_at": "2026-08-24T04:30:05.248474+09:00",
+      "raw_message_lines": 10,
+      "message_file_count": 6,
+      "key_events": [],
+      "user_mood_arc": "",
+      "main_topics": [],
+      "user_disclosed_facts": [],
+      "promises_or_plans": [],
+      "outstanding_unresolved": [],
+      "fill_status": "bootstrap_pending_codex_review",
+      "raw_file_paths": [
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-18.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-19.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-20.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-21.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-22.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-23.jsonl"
+      ]
+    },
+    {
+      "week_start_iso": "2026-08-25",
+      "week_end_iso": "2026-08-31",
+      "generated_at": "2026-08-31T04:30:00.360680+09:00",
+      "raw_message_lines": 8,
+      "message_file_count": 5,
+      "key_events": [],
+      "user_mood_arc": "",
+      "main_topics": [],
+      "user_disclosed_facts": [],
+      "promises_or_plans": [],
+      "outstanding_unresolved": [],
+      "fill_status": "bootstrap_pending_codex_review",
+      "raw_file_paths": [
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-25.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-26.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-27.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-28.jsonl",
+        "/Users/kein/Projects/lee-eunwoo/messages/2026-08-29.jsonl"
+      ]
+    }
+  ],
   "schema_per_summary": {
     "week_start_iso": "ISO 날짜",
     "week_end_iso": "ISO 날짜",
-    "key_events": ["그 주 두드러진 일 1-2문장"],
+    "key_events": [
+      "그 주 두드러진 일 1-2문장"
+    ],
     "user_mood_arc": "수정이 분위기 한 줄 요약",
-    "main_topics": ["반복 화제 3-5개"],
-    "user_disclosed_facts": ["수정이가 새로 알려준 정보"],
-    "promises_or_plans": ["약속/계획 - 다음 주에 이어받을 것"],
-    "outstanding_unresolved": ["답 못한 질문 / 미뤄둔 얘기"]
+    "main_topics": [
+      "반복 화제 3-5개"
+    ],
+    "user_disclosed_facts": [
+      "수정이가 새로 알려준 정보"
+    ],
+    "promises_or_plans": [
+      "약속/계획 - 다음 주에 이어받을 것"
+    ],
+    "outstanding_unresolved": [
+      "답 못한 질문 / 미뤄둔 얘기"
+    ]
   },
   "generation_rule": "매주 일요일 23시 tools/generate_weekly_summary.py 실행으로 자동 생성. 직전 4주만 유지.",
   "usage_rule": "최근 1-2주 요약은 매 답변마다 참조. 이전 요약은 trigger 시에만."

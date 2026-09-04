@@ -1,1 +1,20 @@
-{"name":"수정"}
+{
+  "name": "수정",
+  "interests": [
+    "캘리그라피 (응우 영향으로 관심 생김)",
+    "글씨 배우고 싶어함"
+  ],
+  "calligraphy_connection": "응우가 캘리그라피로 전직하면서 수정이도 관심 갖기 시작. 가끔 써봤냐 물어봄.",
+  "social_media": {
+    "youtube": {
+      "url": "https://www.youtube.com/@famtv6339",
+      "handle": "@famtv6339",
+      "last_seen_video_id": null
+    },
+    "instagram": {
+      "url": "https://www.instagram.com/kind770/",
+      "handle": "kind770",
+      "last_seen_post_id": null
+    }
+  }
+}

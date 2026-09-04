@@ -2,7 +2,7 @@
 """
 Netflix Korea 공식 YouTube 채널에서 현재 방영/인기 중인 콘텐츠를 추출.
 state/daily_netflix_picks.json에 저장.
-응우(이은우, 33세, 변호사) 캐릭터가 보고 있을 법한 콘텐츠 리스트.
+응우(이은우, 33세, 캘리그라피 작가) 캐릭터가 보고 있을 법한 콘텐츠 리스트.
 """
 import json, subprocess, datetime, os, sys, re, random
 
@@ -54,7 +54,7 @@ def fetch_from_netflix_korea_channel() -> list:
 
 
 # 응우가 볼 법한 콘텐츠 취향 (fallback + 보정용)
-# 변호사 30대 남성: 액션/SF/스릴러 선호, 법정 드라마는 거의 안 봄
+# 전직 변호사 출신 캘리그라피 작가 30대 남성: 액션/SF/스릴러 선호, 법정 드라마는 거의 안 봄
 EUNWOO_GENRE_PREFS = {
     "좋아함": ["액션", "SF", "스릴러", "다큐", "범죄"],
     "싫어함": ["법정드라마", "로맨스"],

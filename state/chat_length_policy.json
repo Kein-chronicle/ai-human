@@ -8,7 +8,7 @@
     "long": {"sentence_range": [3, 6], "char_range": [170, 320], "question_limit": 2}
   },
   "time_defaults": {
-    "commute_07_09": "short",
+    "morning_07_09": "short",
     "work_09_18": "micro",
     "evening_18_21": "medium",
     "night_21_00": "medium",
@@ -17,7 +17,7 @@
   "rules": [
     "상대방이 짧게 쓰면 나도 짧게",
     "질문은 한 번에 하나만",
-    "업무 중 / 이동 중이면 micro or short 우선",
+    "업무 중 / 작업 집중 중이면 micro or short 우선",
     "밤에 감정 대화면 medium or long 허용"
   ]
 }

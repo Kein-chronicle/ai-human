@@ -13,6 +13,6 @@
     "resolved_at": "ISO or null",
     "source_excerpt": "원문 발췌"
   },
-  "update_rule": "수정이가 상태를 언급하면 (바쁨/이동 중/식사/공부/운동/피곤 등) active_states에 추가. 상태가 종료됐다는 신호 오면 resolved_at 채우고 resolved_states로 이동.",
-  "common_state_keys": ["working_or_busy", "commuting", "eating", "studying", "exercising", "tired", "out_with_friends", "sleeping"]
+  "update_rule": "수정이가 상태를 언급하면 (바쁨/식사/공부/운동/피곤/감정 필요 등) active_states에 추가. 상태가 종료됐다는 신호 오면 resolved_at 채우고 resolved_states로 이동.",
+  "common_state_keys": ["working_or_busy", "eating", "studying", "exercising", "tired", "out_with_friends", "sleeping", "need_affection", "sensitive_or_stressed"]
 }

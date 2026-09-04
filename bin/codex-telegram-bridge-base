@@ -102,10 +102,13 @@ function findLatestGeneratedImage(afterMs: number, sessionId?: string | null): s
   const imagesRoot = join(homedir(), ".codex", "generated_images");
   if (!existsSync(imagesRoot)) return null;
   let best: { path: string; mtimeMs: number } | null = null;
+  // 세션ID(이 캐릭터의 codex 세션)를 모르면 전체 스캔하지 않는다.
+  // 예전엔 sessionId 없으면 generated_images 전체를 훑어 mtime 최신을 골랐는데,
+  // 이 디렉토리는 모든 캐릭터(웅삐 등)가 공유하므로 다른 캐릭터 사진을 잘못 보내거나
+  // 새 이미지가 없을 때 남의 최신 사진을 중복 전송하는 오염이 발생했다. → 세션 격리만 허용.
+  if (!sessionId) return null;
   try {
-    const sessionDirs = sessionId
-      ? [join(imagesRoot, sessionId)]
-      : readdirSync(imagesRoot).map((e) => join(imagesRoot, e));
+    const sessionDirs = [join(imagesRoot, sessionId)];
     for (const sessionPath of sessionDirs) {
       try {
         if (!statSync(sessionPath).isDirectory()) continue;
@@ -114,7 +117,9 @@ function findLatestGeneratedImage(afterMs: number, sessionId?: string | null): s
           const filePath = join(sessionPath, file);
           try {
             const { mtimeMs } = statSync(filePath);
-            if (mtimeMs >= afterMs - 10000 && (!best || mtimeMs > best.mtimeMs)) {
+            // afterMs(생성 시작 직전 시각) 이후 새로 만들어진 이미지만. -3000은 파일시스템/시계 스큐 여유.
+            // (넉넉한 -10000은 직전에 이미 보낸 기존 이미지를 다시 집어 중복 전송하는 원인이었음)
+            if (mtimeMs >= afterMs - 3000 && (!best || mtimeMs > best.mtimeMs)) {
               best = { path: filePath, mtimeMs };
             }
           } catch {}
@@ -181,14 +186,28 @@ function loadHabitPhrase(): string {
   } catch { return ""; }
 }
 
+function insertBreathingPauses(text: string): string {
+  // 줄바꿈 → 문장 구분
+  text = text.replace(/\n/g, ". ");
+  // 문장 끝 뒤 pause
+  text = text.replace(/([.?!])\s+/g, '$1<break time="550ms"/> ');
+  // 호명 뒤 pause (수정아, XX아, XX야)
+  text = text.replace(/(수정아|[가-힣]{1,3}아|[가-힣]{1,3}야)\s+/g, '$1<break time="380ms"/> ');
+  // 쉼표 뒤 pause
+  text = text.replace(/,\s+/g, ',<break time="300ms"/> ');
+  // 연결어미 뒤 중간 숨 (다가, 하고, 해서, 하면서 등)
+  text = text.replace(/(다가|하고|해서|하면서|하다가|하다보니|했는데|했고)\s+/g, '$1<break time="280ms"/> ');
+  return text.replace(/\s+/g, " ").trim();
+}
+
 function cleanVoiceText(text: string): string {
   const cleaned = text
     .replace(/[^가-힣㄰-㆏ᄀ-ᇿ -~\n]/g, "")
     .replace(/ㅋ+/g, "").replace(/ㅎ+/g, "").replace(/\.{2,}/g, ".").replace(/~+/g, "")
     .replace(/\s+/g, " ").trim();
   const habit = loadHabitPhrase();
-  if (!habit || cleaned.length < 8) return cleaned;
-  return `${habit} ${cleaned}`;
+  const base = (!habit || cleaned.length < 8) ? cleaned : `${habit} ${cleaned}`;
+  return insertBreathingPauses(base);
 }
 
 function applyEmotionCarryover(vs: { stability: number; similarity_boost: number; style: number; use_speaker_boost: boolean }): typeof vs {
@@ -767,7 +786,10 @@ function splitWoongbbiMessages(text: string): string[] {
   // Split on any newline — each line is a separate message in casual Korean texting
   const paragraphs = normalized.split(/\n+/).map((p) => p.replace(/\s+/g, " ").trim()).filter(Boolean);
 
-  const perMessageSoftLimit = 120;
+  // 업무/프로젝트 대화 감지 — 길이 제한 완화
+  const isWorkContent = /계약|의뢰|커미션|작업|코드|게임|프로젝트|AI|개발/.test(normalized);
+  const perMessageSoftLimit = isWorkContent ? 400 : 120;
+  const maxMessages = isWorkContent ? 999 : 5;
   const messages: string[] = [];
 
   for (const para of paragraphs) {
@@ -792,8 +814,8 @@ function splitWoongbbiMessages(text: string): string[] {
     if (current) messages.push(current);
   }
 
-  // Safety cap: max 5 messages per response
-  return messages.slice(0, 5).filter(Boolean);
+  // Safety cap
+  return messages.slice(0, maxMessages).filter(Boolean);
 }
 
 // 사람처럼 보이는 타이핑/생각 딜레이 계산 (글자 수 비례, 상·하한 적용)
@@ -1347,8 +1369,8 @@ const FOLLOWUP_PROMISE_PATTERNS: { re: RegExp; delayMin: () => number; ctx: stri
   { re: /(일|업무|회의|미팅)\s*(끝나고|끝나면|마치고)\s*(연락|말|얘기|다시)/, delayMin: () => 40 + Math.floor(Math.random() * 30), ctx: "일 끝났어. 아까 끝나고 연락한다고 했으니까 자연스럽게 짧게 말 걸어줘." },
   // 운동/수영 끝나고
   { re: /(운동|수영|헬스)\s*(끝나고|끝나면|하고)\s*(연락|말|얘기|다시)/, delayMin: () => 60 + Math.floor(Math.random() * 20), ctx: "운동 끝났어. 아까 끝나고 연락한다고 했으니까 자연스럽게 짧게 말 걸어줘." },
-  // 퇴근 후
-  { re: /퇴근하고\s*(연락|말|얘기|다시)/, delayMin: () => 30 + Math.floor(Math.random() * 20), ctx: "퇴근했어. 아까 퇴근하고 연락한다고 했으니까 자연스럽게 짧게 말 걸어줘." },
+  // 저녁/작업 후
+  { re: /저녁\s*먹고\s*(연락|말|얘기|다시)|작업\s*마치고\s*(연락|말|얘기)/, delayMin: () => 30 + Math.floor(Math.random() * 20), ctx: "작업 마쳤어. 아까 끝나고 연락한다고 했으니까 자연스럽게 짧게 말 걸어줘." },
   // 정리/확인 후
   { re: /(정리|마무리)\s*(하고|끝내고)\s*(연락|말|얘기)/, delayMin: () => 20 + Math.floor(Math.random() * 15), ctx: "아까 정리하고 연락한다고 했어. 자연스럽게 짧게 말 걸어줘." },
 ];
@@ -1528,24 +1550,25 @@ async function checkPendingProactivePhoto(token: string): Promise<void> {
     });
 
     const generatedImage = findLatestGeneratedImage(startMs, readCharacterSessionId());
-    if (generatedImage) {
+    const lastSentFile = join(stateDir, "last_proactive_photo.txt");
+    let lastSentPhoto = "";
+    try { lastSentPhoto = readFileSync(lastSentFile, "utf8").trim(); } catch {}
+    if (generatedImage && generatedImage !== lastSentPhoto) {
+      try { writeFileSync(lastSentFile, generatedImage, { mode: 0o600 }); } catch {}
+      // 사진 자체는 이미 캐릭터 워커 내부(photoHint 프롬프트의 exec_command → send_telegram_photo.py)에서
+      // 직접 전송했다 — 여기서 sendPhotoMessage()를 또 호출하면 같은 사진이 두 번 나간다(2026-08-03 발견·수정).
+      // 이 아래는 사진에 곁들일 짧은 말만 텍스트로 보낸다.
       const msgs = result.answer.split("\n").map((l: string) => l.trim()).filter(Boolean).slice(0, 2);
       if (msgs.length > 0) {
-        await sendWoongbbiMessages(token, chatId, [msgs[0]]);
-        await Bun.sleep(800 + Math.random() * 1000);
+        await sendWoongbbiMessages(token, chatId, msgs);
+        logOutgoingTextParts("system", "proactive_photo", msgs);
       }
-      await sendPhotoMessage(token, chatId, generatedImage, "");
-      if (msgs.length > 1) {
-        await Bun.sleep(600 + Math.random() * 800);
-        await sendWoongbbiMessages(token, chatId, [msgs[1]]);
-      }
-      if (msgs.length > 0) logOutgoingTextParts("system", "proactive_photo", msgs);
       trigger.status = "sent";
       console.error(`[proactive-photo] fulfilled window=${trigger.window}`);
     } else {
       trigger.status = "failed";
-      trigger.error = "no_image";
-      console.error(`[proactive-photo] no image generated, skipping window=${trigger.window}`);
+      trigger.error = generatedImage ? "duplicate_image_skipped" : "no_image";
+      console.error(`[proactive-photo] ${generatedImage ? "duplicate image skipped" : "no image generated"}, window=${trigger.window}`);
     }
   } catch (err) {
     trigger.status = "failed";
@@ -1734,12 +1757,12 @@ function activityHint(activity: string | null | undefined): string {
   const key = activity ?? "";
   const map: Record<string, string> = {
     waking_up: "막 일어나서 몽롱한 상태",
-    getting_ready: "출근 준비 중",
-    commuting_to_work: "출근길 이동 중",
-    hospital_morning_shift: "병원 오전 근무 중",
+    getting_ready: "작업 준비 중",
+    commuting_to_work: "외출 이동 중",
+    morning_work: "오전 작업 중",
     lunch_break: "점심시간",
-    hospital_afternoon_shift: "병원 오후 근무 중",
-    commuting_home: "퇴근길 이동 중",
+    afternoon_work: "오후 작업 중",
+    evening_free: "저녁 자유 시간",
     dinner_or_cooking: "집에서 저녁 준비 중",
     exercise_or_cafe: "운동이나 카페 시간",
     night_wind_down: "씻고 누워서 쉬는 시간",
@@ -2113,12 +2136,67 @@ async function processMessage(token: string, message: any) {
         mime_type: image.mimeType ?? null,
       });
     }
+    // 이미지 텍스트 OCR (Codex CLI 사용 — 캘리그라피 손글씨 읽기)
+    let extractedTexts: string[] = [];
+    for (const img of incomingImages.slice(0, 3)) {
+      if (!img.path) continue;
+      try {
+        const ocrPrompt = [
+          "이 이미지에서 손글씨/캘리그라피 텍스트를 분석해줘.",
+          "",
+          "1. 보이는 텍스트 그대로 읽기 (줄바꿈 포함)",
+          "2. 텍스트를 재배열해서 자연스러운 문장/구절로 재구성 (캘리그라피 특성상 줄간격·배치가 불규칙할 수 있으므로)",
+          "3. 한 줄 해석/감상",
+          "",
+          "JSON으로만 출력:",
+          `{"raw": "원문 그대로", "reconstructed": "재구성된 자연스러운 문장", "interpretation": "한 줄 감상"}`
+        ].join("\n");
+        const ocrProc = Bun.spawn(
+          ["/opt/homebrew/bin/codex", "exec",
+           "--dangerously-bypass-approvals-and-sandbox",
+           "--skip-git-repo-check", "--color", "never",
+           "--image", img.path, "-"],
+          {
+            stdin: new TextEncoder().encode(ocrPrompt),
+            stdout: "pipe", stderr: "pipe",
+          }
+        );
+        const rawOut = await new Response(ocrProc.stdout).text();
+        await ocrProc.exited;
+        // "tokens used" 이후 실제 답변 추출
+        const outLines = rawOut.split("\n").map(l => l.trim()).filter(Boolean);
+        const tokIdx = outLines.findLastIndex(l => l.startsWith("tokens used"));
+        const answer = tokIdx >= 0 ? outLines.slice(tokIdx + 1).join("\n").trim() : outLines.join("\n").trim();
+        if (answer && answer.length < 800) {
+          // JSON 파싱 시도
+          try {
+            const jsonMatch = answer.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              const rich = `[원문] ${parsed.raw} / [재구성] ${parsed.reconstructed} / [감상] ${parsed.interpretation}`;
+              extractedTexts.push(rich);
+              console.error(`[img-ocr] ${img.path.split("/").pop()}: ${parsed.reconstructed?.slice(0, 60)}`);
+            } else {
+              extractedTexts.push(answer);
+              console.error(`[img-ocr] ${img.path.split("/").pop()}: ${answer.slice(0, 60)}`);
+            }
+          } catch {
+            extractedTexts.push(answer);
+          }
+        }
+      } catch {}
+    }
+
     saveJsonFile(incomingImageContextFile, {
       updated_at: timestamp,
       telegram_user: userName,
       mode: targetMode,
       text: effectiveText,
       images: incomingImages,
+      ocr_texts: extractedTexts,
+      ocr_summary: extractedTexts.length > 0
+        ? `이미지에서 읽은 텍스트: ${extractedTexts.join(" / ")}`
+        : null,
     });
   }
 

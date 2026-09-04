@@ -1,20 +1,19 @@
 {
-  "updated_at": "2026-05-27T14:39:54.474Z",
+  "updated_at": "2026-08-05T09:31:12+09:00",
+  "last_received_at": "2026-08-05T09:31:12+09:00",
+  "responded": true,
   "telegram_user": "kind770su",
   "mode": "character",
-  "text": "요새 손글씨 쓰고 있는데 내가 내글씨로 힐링되고있엉 유익한거같앙",
+  "text": "ㅎㅎㅎ귀엽지",
   "images": [
     {
       "kind": "photo",
-      "path": "/Users/kein/Projects/lee-eunwoo/images/incoming/2026-05-27/233954_telegram_photo_AQADlRBrG9QpuVR-.jpg",
-      "fileId": "AgACAgUAAxkBAAIBnGoXAjjKP6396yQ64PFsDNuGo9lEAAKVEGsb1Cm5VGttxR2CErSOAQADAgADeQADOwQ",
-      "fileUniqueId": "AQADlRBrG9QpuVR-",
-      "width": 588,
+      "path": "/Users/kein/Projects/lee-eunwoo/images/incoming/2026-08-05/093112_telegram_photo_AQAD0hZrGzIumFd-.jpg",
+      "fileUniqueId": "AQAD0hZrGzIumFd-",
+      "width": 960,
       "height": 1280,
-      "fileSize": 85377,
       "mimeType": "image/jpeg",
-      "telegramFilePath": "photos/file_2.jpg",
-      "caption": "요새 손글씨 쓰고 있는데 내가 내글씨로 힐링되고있엉 유익한거같앙"
+      "caption": "ㅎㅎㅎ귀엽지"
     }
   ]
 }

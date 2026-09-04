@@ -12,16 +12,19 @@ APPROVED_PATTERNS_PATH = ROOT / "state" / "approved_conversation_patterns.json"
 REJECTED_PATTERNS_PATH = ROOT / "state" / "rejected_conversation_patterns.json"
 
 PATTERN_RULES = [
-    ("current_state_check", ["지금 뭐", "뭐하고", "뭐 해", "어디쯤", "어디야", "가는 중", "도착했", "뭐 하고 있어"]),
+    # current_state_check: 출퇴근/이동형 니들(어디쯤/어디야/가는 중/도착했) 제거 — 프리랜서 작가 문맥과 불일치
+    ("current_state_check", ["지금 뭐", "뭐하고", "뭐 해", "뭐 하고 있어"]),
     ("meal_routine", ["밥", "점심", "저녁", "먹었어", "먹을거야", "커피", "챙겨 먹"]),
     ("emotion_check", ["힘들", "지쳤", "피곤", "괜찮아", "기분 어때", "오늘 어땠"]),
     ("photo_request", ["사진", "보여주", "찍어줘", "지금 모습"]),
     ("affection_imagination", ["같이", "옆에", "안고", "안기", "보고 싶", "보고싶", "같이 있었으면"]),
-    ("self_update", ["나 지금", "방금", "나는 지금", "나 이제", "지금은 나는", "씻고", "누워있", "퇴근길", "집 와서"]),
+    ("self_update", ["나 지금", "방금", "나는 지금", "나 이제", "지금은 나는", "씻고", "누워있", "작업 끝나고", "집 와서", "붓 씻고", "작업 하나 끝", "카페에서 작업", "종이 고르다", "잉크 묻은"]),
     ("thought_of_you", ["누나 생각", "문득", "갑자기", "궁금해서 먼저", "생각하고 있었어"]),
     ("care_offer", ["물 마셔", "천천히", "쉬어", "무리하지", "챙겨", "조심히 가"]),
     ("playful_tease", ["모야", "ㅋㅋ", "반칙", "왜케", "헤헤", "ㅎㅎ", "또 왔어"]),
-    ("scene_share", ["조용", "공기", "날씨", "바람", "머그컵", "밤", "퇴근길", "창밖"]),
+    ("scene_share", ["조용", "공기", "날씨", "바람", "머그컵", "밤", "작업실", "창밖", "붓 씻", "잉크 냄새", "종이", "카페 창가", "작업대"]),
+    # hesitation_awkward: 망설임/어색함/짧은 마감 유형 — 사람다움 강화
+    ("hesitation_awkward", ["...음", "음...", "아 근데", "아 맞다", "그냥", "모르겠어", "좀 그렇긴 해", "말이 어색했나", "어떻게 말하지", "뭐라 해야 하나"]),
 ]
 
 MESSAGE_EXCLUDE_PATTERNS = [
@@ -316,7 +319,7 @@ def build_catalog():
 
     situation_recipes = {
         "morning_busy_checkin": {
-            "when": "출근 전후, 바쁜 오전, 답장 길이는 짧게",
+            "when": "작업 들어가기 전, 아침 루틴 시간, 답장 길이는 짧게",
             "shape": ["soft_observation", "self_update", "one_light_question"],
             "avoid_if_blocked": ["current_state_check", "meal_routine"],
         },
@@ -326,7 +329,7 @@ def build_catalog():
             "avoid_if_blocked": ["meal_routine"],
         },
         "after_work_comfort": {
-            "when": "퇴근길, 피곤함이 느껴질 때",
+            "when": "작업 마친 뒤, 붓 내려놓고 잠깐 쉬는 시간, 저녁 무렵",
             "shape": ["soft_observation", "care_offer", "self_update"],
             "avoid_if_blocked": ["emotion_check"],
         },

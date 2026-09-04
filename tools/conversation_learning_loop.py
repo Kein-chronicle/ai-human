@@ -16,16 +16,19 @@ DECISION_LOG_PATH = log_path("response_decision_log.jsonl")
 BUILD_SCRIPT_PATH = ROOT / "scripts" / "build_conversation_pattern_catalog.py"
 
 PATTERN_RULES = [
-    ("current_state_check", ["지금 뭐", "뭐하고", "뭐 해", "어디쯤", "어디야", "가는 중", "도착했", "뭐 하고 있어"]),
+    # current_state_check: 출퇴근/이동형 니들(어디쯤/어디야/가는 중/도착했) 제거 — 프리랜서 작가 문맥과 불일치
+    ("current_state_check", ["지금 뭐", "뭐하고", "뭐 해", "뭐 하고 있어"]),
     ("meal_routine", ["밥", "점심", "저녁", "먹었어", "먹을거야", "커피", "챙겨 먹"]),
     ("emotion_check", ["힘들", "지쳤", "피곤", "괜찮아", "기분 어때", "오늘 어땠"]),
     ("photo_request", ["사진", "보여주", "찍어줘", "지금 모습"]),
     ("affection_imagination", ["같이", "옆에", "안고", "안기", "보고 싶", "보고싶", "같이 있었으면"]),
-    ("self_update", ["나 지금", "방금", "나는 지금", "나 이제", "지금은 나는", "씻고", "누워있", "퇴근길", "집 와서"]),
+    ("self_update", ["나 지금", "방금", "나는 지금", "나 이제", "지금은 나는", "씻고", "누워있", "작업 끝나고", "집 와서", "붓 씻고", "작업 하나 끝", "카페에서 작업", "종이 고르다", "잉크 묻은"]),
     ("thought_of_you", ["누나 생각", "문득", "갑자기", "궁금해서 먼저", "생각하고 있었어"]),
     ("care_offer", ["물 마셔", "천천히", "쉬어", "무리하지", "챙겨", "조심히 가"]),
     ("playful_tease", ["모야", "ㅋㅋ", "반칙", "왜케", "헤헤", "ㅎㅎ", "또 왔어"]),
-    ("scene_share", ["조용", "공기", "날씨", "바람", "머그컵", "밤", "퇴근길", "창밖"]),
+    ("scene_share", ["조용", "공기", "날씨", "바람", "머그컵", "밤", "작업실", "창밖", "붓 씻", "잉크 냄새", "종이", "카페 창가", "작업대"]),
+    # hesitation_awkward: 망설임/어색함/짧은 마감 유형 — 사람다움 강화
+    ("hesitation_awkward", ["...음", "음...", "아 근데", "아 맞다", "그냥", "모르겠어", "좀 그렇긴 해", "말이 어색했나", "어떻게 말하지", "뭐라 해야 하나"]),
 ]
 
 EXPLICIT_PATTERNS = [
@@ -40,10 +43,12 @@ IDENTITY_CONFLICT_PATTERNS = [
 
 JOB_CONFLICT_PATTERNS = [
     r"병동", r"인수인계", r"차팅", r"환자", r"교수님", r"수업", r"강의실",
+    r"법원", r"의뢰인", r"재판", r"변론", r"로펌", r"서류\s*보고", r"퇴근길",
 ]
 
 ALLOWED_JOB_CONTEXT_PATTERNS = [
-    r"법원", r"의뢰인", r"계약", r"재판", r"변론", r"로펌", r"사무실", r"퇴근",
+    r"커미션", r"작업", r"붓", r"캘리그라피", r"인스타", r"문구점", r"연습",
+    r"잉크", r"종이", r"작업실", r"포트폴리오", r"글씨",
 ]
 
 TONE_CONFLICT_PATTERNS = [
@@ -155,11 +160,10 @@ def canonical_checks(text: str, category: str) -> dict:
     naturalness_conflict = any(needle in body for needle in NATURALNESS_CONFLICT_NEEDLES)
     non_korean = hangul_ratio(body) < 0.3
     fragment_conflict = any(re.search(p, body) for p in FRAGMENT_ENDING_PATTERNS)
-    job_conflict = False
-    if category == "self_update":
-        job_conflict = any(re.search(p, body, re.IGNORECASE) for p in JOB_CONFLICT_PATTERNS)
-        if any(re.search(p, body, re.IGNORECASE) for p in ALLOWED_JOB_CONTEXT_PATTERNS):
-            job_conflict = False
+    # job_conflict: self_update에만 국한하지 않고 모든 카테고리에 적용 (법조/병원 키워드가 다른 카테고리에서도 승인되는 버그 수정)
+    job_conflict = any(re.search(p, body, re.IGNORECASE) for p in JOB_CONFLICT_PATTERNS)
+    if job_conflict and any(re.search(p, body, re.IGNORECASE) for p in ALLOWED_JOB_CONTEXT_PATTERNS):
+        job_conflict = False
     relationship_conflict = bool(re.search(r"\b(남편|신랑|아내|와이프)\b", body))
     if category in {"current_state_check", "meal_routine", "care_offer"} and len(body) < 18 and "누나" not in body:
         fragment_conflict = True

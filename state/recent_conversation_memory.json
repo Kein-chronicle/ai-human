@@ -2,7 +2,7 @@
   "schema_version": 1,
   "managed_by": "character_worker",
   "purpose": "수정이와 대화에서 회수할 만한 기억 (약속, 경험, 언급한 것들). 자연스러운 타이밍에 회수해서 실존감 강화.",
-  "last_updated_at": null,
+  "last_updated_at": "2026-08-05T09:31:12+09:00",
   "decay_policy": {
     "fresh_window_days": 3,
     "warm_window_days": 14,
@@ -15,5 +15,125 @@
     "medium": "공유한 일상 (먹은 메뉴/갔던 장소/봤던 것) — 30일 유지",
     "low": "사소한 언급 / 짧은 코멘트 — 7-14일 유지"
   },
-  "items": []
+  "items": [
+    {
+      "id": "img_20260602T081700Z",
+      "category": "received_photo",
+      "summary": "상대가 캘리그라피 문구 4장 사진을 보냄",
+      "strength": "high",
+      "trigger_keywords": [
+        "캘리그라피",
+        "문구",
+        "손글씨"
+      ],
+      "natural_callback_examples": [
+        "아까 보내준 사진"
+      ],
+      "occurred_at": "2026-06-02T08:17:00.000Z",
+      "expires_at": "2026-06-09T08:17:00.000Z",
+      "active": true
+    },
+    {
+      "id": "img_20260604T084750Z",
+      "category": "received_photo",
+      "summary": "누나가 캘리그라피 문구 카드 4장 사진 보냄",
+      "strength": "high",
+      "trigger_keywords": [
+        "캘리그라피",
+        "문구",
+        "카드"
+      ],
+      "natural_callback_examples": [
+        "아까 보내준 사진"
+      ],
+      "occurred_at": "2026-06-02T08:17:00.000Z",
+      "expires_at": "2026-06-09T08:17:00.000Z",
+      "active": true
+    },
+    {
+      "id": "img_20260607T053600Z",
+      "category": "received_photo",
+      "summary": "누나가 놀이터에서 시소 타는 아이들 사진 보냄",
+      "strength": "high",
+      "trigger_keywords": [
+        "놀이터",
+        "아이들",
+        "시소"
+      ],
+      "natural_callback_examples": [
+        "아까 보내준 사진"
+      ],
+      "occurred_at": "2026-06-07T05:36:00.000Z",
+      "expires_at": "2026-06-14T05:36:00.000Z",
+      "active": true
+    },
+    {
+      "id": "img_20260607T143443Z",
+      "category": "received_photo",
+      "summary": "누나가 강아지 안고 거울셀카 찍은 사진 보냄",
+      "strength": "high",
+      "trigger_keywords": [
+        "강아지",
+        "거울셀카",
+        "잠옷"
+      ],
+      "natural_callback_examples": [
+        "아까 보내준 사진"
+      ],
+      "occurred_at": "2026-06-07T14:34:43Z",
+      "expires_at": "2026-06-14T14:34:43Z",
+      "active": true
+    },
+    {
+      "id": "img_20260615T092655Z",
+      "category": "received_photo",
+      "summary": "누나가 손그림과 캘리그라피가 들어간 메모장 작업 사진들을 보냄",
+      "strength": "high",
+      "trigger_keywords": [
+        "메모장",
+        "캘리그라피",
+        "손그림"
+      ],
+      "natural_callback_examples": [
+        "아까 보내준 사진"
+      ],
+      "occurred_at": "2026-06-15T09:26:55Z",
+      "expires_at": "2026-06-22T09:26:55Z",
+      "active": true
+    },
+    {
+      "id": "img_20260618T004121Z",
+      "category": "received_photo",
+      "summary": "누나가 손글씨 문구가 적힌 스프링 메모장 사진을 보냄",
+      "strength": "high",
+      "trigger_keywords": [
+        "메모장",
+        "손글씨",
+        "캘리그라피"
+      ],
+      "natural_callback_examples": [
+        "아까 보내준 사진"
+      ],
+      "occurred_at": "2026-06-18T00:41:21Z",
+      "expires_at": "2026-06-25T00:41:21Z",
+      "active": true
+    },
+    {
+      "id": "img_20260805T093112+0900",
+      "category": "received_photo",
+      "summary": "수정이가 앞머리에 헤어롤을 한 아이의 귀여운 사진을 보냄",
+      "strength": "high",
+      "trigger_keywords": [
+        "아이",
+        "헤어롤",
+        "꽃무늬옷"
+      ],
+      "natural_callback_examples": [
+        "아까 보내준 사진"
+      ],
+      "occurred_at": "2026-08-05T09:31:12+09:00",
+      "expires_at": "2026-08-12T09:31:12+09:00",
+      "active": true
+    }
+  ]
 }

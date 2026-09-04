@@ -1978,7 +1978,7 @@ function buildPrompt(char: any, voiceGuide: string, characterProfile: string, us
 
   if (photoHint && !voiceHint) {
     const imgpathCmd = sessionId
-      ? `ls ~/.codex/generated_images/${sessionId}/*.png 2>/dev/null | sort -r | head -1`
+      ? `ls -t ~/.codex/generated_images/${sessionId}/*.png 2>/dev/null | head -1`
       : `ls -t ~/.codex/generated_images/**/*.png 2>/dev/null | head -1`;
     lines.push(
       `⚠️ [image_gen 실행 조건 — 이것부터 확인]`,

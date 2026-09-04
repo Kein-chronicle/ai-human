@@ -1,35 +1,31 @@
 {
-  "date": "2026-05-29",
+  "date": "2026-06-02",
   "character": "eunwoo",
   "picks": [
     {
       "title": "유재석 캠프",
+      "genre": "예능",
       "platform": "Netflix",
-      "source": "netflix_korea_channel",
-      "mention_hint": "유재석 캠프 재밌다는 거 들었어. 아직 안 봤어?",
-      "shareable": true
+      "mention_hint": "나 요즘 유재석 캠프 보고 있어",
+      "shareable": true,
+      "source": "fallback"
     },
     {
-      "title": "원더풀스",
+      "title": "솔로지옥 시즌5",
+      "genre": "예능연애",
       "platform": "Netflix",
-      "source": "netflix_korea_channel",
-      "mention_hint": "원더풀스 재밌다는 거 들었어. 아직 안 봤어?",
-      "shareable": true
+      "mention_hint": "솔로지옥 시즌5 한번 봐봐. 생각보다 재밌어",
+      "shareable": true,
+      "source": "fallback"
     },
     {
-      "title": "레이디스 퍼스트: 거꾸로 가는 남자",
+      "title": "카지노 시즌2",
+      "genre": "범죄스릴러",
       "platform": "Netflix",
-      "source": "netflix_korea_channel",
-      "mention_hint": "레이디스 퍼스트: 거꾸로 가는 남자 한번 봐봐. 생각보다 재밌어",
-      "shareable": true
-    },
-    {
-      "title": "위키드",
-      "platform": "Netflix",
-      "source": "netflix_korea_channel",
-      "mention_hint": "위키드 한번 봐봐. 생각보다 재밌어",
-      "shareable": true
+      "mention_hint": "카지노 시즌2 한번 봐봐. 생각보다 재밌어",
+      "shareable": true,
+      "source": "fallback"
     }
   ],
-  "generated_at": "2026-05-29T00:06:52.683905"
+  "generated_at": "2026-06-02T00:04:44.238839"
 }

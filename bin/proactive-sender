@@ -222,51 +222,23 @@ function maybeUpdateSelfBusyState(): void {
     let blockLabel = "자유 시간";
     let until: string | null = null;
 
-    if (sched.day_type === "weekday") {
-      const departMin = toMinutes(sched.morning?.depart_time ?? "");
-      const arriveWorkMin = toMinutes(sched.commute_to_work?.arrive_time ?? sched.morning?.arrive_time ?? "09:00");
-      const workEndMin = toMinutes(sched.commute_home?.depart_time ?? "18:00");
-      const arriveHomeMin = toMinutes(sched.commute_home?.arrive_time ?? "19:30");
-      const lunchStartMin = toMinutes(sched.lunch?.time ?? "");
-      const lunchEndMin = toMinutes(sched.lunch?.end_time ?? "");
+    // 캘리그라피 작가 (프리랜서): 특별 이벤트 없으면 항상 free
+    // busy 조건: 헬스장(운동), 수면(늦은 밤), 외부 이동(화방/카페 나갈 때만 soft)
+    const h = nowKstHour();
 
-      if (departMin > 0 && cur >= departMin && cur < arriveWorkMin) {
-        blockType = "commute"; blockLabel = "출근 중"; until = sched.commute_to_work?.arrive_time ?? "09:00";
-      } else if (lunchStartMin > 0 && lunchEndMin > 0 && cur >= lunchStartMin && cur < lunchEndMin) {
-        blockType = "free"; blockLabel = "점심 시간"; until = sched.lunch?.end_time ?? null;
-      } else if (cur >= arriveWorkMin && cur < workEndMin) {
-        blockType = "free"; blockLabel = "사무실"; until = null; // 변호사 → 사무실서 폰 체크 가능, commute/재판만 hard block
-      } else if (cur >= workEndMin && cur < arriveHomeMin) {
-        blockType = "commute"; blockLabel = "퇴근 중"; until = sched.commute_home?.arrive_time ?? "19:30";
-      }
-
-      // 재판/변론기일 하드 블록: 업무 태스크에 재판·변론 키워드가 있으면 court_hearing으로 덮어씀
-      const allTasks = [
-        ...(sched.work?.morning_tasks ?? []),
-        ...(sched.work?.afternoon_tasks ?? []),
-        ...(sched.work?.court_hearings ?? []),
-      ];
-      for (const task of allTasks) {
-        const label: string = task.task ?? task.label ?? "";
-        if (!/재판|변론기일|법원|hearings?/i.test(label)) continue;
-        const taskStart = toMinutes(task.time ?? task.start_time ?? "");
-        const taskEnd = toMinutes(task.end_time ?? "");
-        if (taskStart <= 0) continue;
-        const effectiveEnd = taskEnd > 0 ? taskEnd : taskStart + 90;
-        if (cur >= taskStart && cur < effectiveEnd) {
-          blockType = "court_hearing";
-          blockLabel = "재판 중";
-          until = taskEnd > 0 ? (task.end_time ?? null) : minutesToHhm(taskStart + 90);
-          break;
-        }
-      }
-
-      const exerciseStart = toMinutes(sched.evening?.start ?? "");
-      const exerciseEnd = toMinutes(sched.evening?.end ?? "");
-      if (exerciseStart > 0 && cur >= exerciseStart && cur < exerciseEnd) {
-        blockType = "exercise"; blockLabel = "운동 중"; until = sched.evening?.end ?? null;
+    // 새벽/수면 시간대 (01:30~08:00 — 취침 00:30, 기상 08:00)
+    if (h >= 2 && h < 8) {
+      blockType = "sleep"; blockLabel = "수면 중"; until = "08:00";
+    }
+    // 헬스장 (저녁 운동 시간, 스케줄에 헬스장 있을 때)
+    else if (sched?.evening?.activity === "헬스장") {
+      const gymStart = toMinutes(sched.evening?.start ?? "19:00");
+      const gymEnd = toMinutes(sched.evening?.shower ?? minutesToHhm(gymStart + 90));
+      if (cur >= gymStart && cur < gymEnd) {
+        blockType = "exercise"; blockLabel = "헬스장 중"; until = sched.evening?.shower ?? null;
       }
     }
+    // 그 외 모든 시간: free (프리랜서, 항상 폰 체크 가능)
 
     writeFileSync(
       selfBusyStateFile,
@@ -285,11 +257,11 @@ function maybeUpdateCharacterAppearance(): void {
   const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
   const h = nowKstHour();
   let timeBlock = "night_home";
-  if (h >= 7 && h < 9) timeBlock = "morning_commute";
+  if (h >= 7 && h < 9) timeBlock = "morning_ready";
   else if (h >= 9 && h < 12) timeBlock = "work_morning";
   else if (h >= 12 && h < 14) timeBlock = "lunch_break";
   else if (h >= 14 && h < 18) timeBlock = "work_afternoon";
-  else if (h >= 18 && h < 21) timeBlock = "evening_commute";
+  else if (h >= 18 && h < 21) timeBlock = "evening_free_time";
   else if (h >= 21) timeBlock = "night_home";
   else timeBlock = "early_morning";
 
@@ -297,32 +269,32 @@ function maybeUpdateCharacterAppearance(): void {
   try { existing = JSON.parse(readFileSync(path, "utf8")); } catch {}
   if (existing.current_date === today && existing.current_time_block === timeBlock) return;
 
-  // 시간대별 외형 상태 (변호사 남성 기준)
+  // 시간대별 외형 상태 (캘리그라피 작가 남성 기준 — 캐주얼, 집/카페 작업)
   const appearances: Record<string, object> = {
-    morning_commute: {
-      outfit_context: "commute_suit", top: "수트 재킷, 드레스 셔츠",
-      bottom: "슬랙스", footwear: "구두", outerwear: null,
-      hair_state: "neat_work_style", hair_detail: "출근 준비 완료 헤어", held_item: "가방 또는 커피",
+    morning_ready: {  // 아침 준비 상태
+      outfit_context: "casual_morning", top: "맨투맨 또는 티셔츠",
+      bottom: "트레이닝 팬츠 또는 면바지", footwear: "슬리퍼", outerwear: null,
+      hair_state: "natural_loose", hair_detail: "아침 일어나서 자연스러운 상태", held_item: "커피",
     },
     work_morning: {
-      outfit_context: "full_suit", top: "수트 재킷 + 드레스 셔츠 + 타이",
-      bottom: "슬랙스", footwear: "구두", outerwear: null,
-      hair_state: "neat_work_style", hair_detail: "정돈된 업무 헤어", held_item: "서류 또는 폰",
+      outfit_context: "casual_work", top: "린넨 셔츠 또는 맨투맨",
+      bottom: "면바지 또는 청바지", footwear: "실내화 또는 맨발", outerwear: null,
+      hair_state: "natural_loose", hair_detail: "작업 중 자연스러운 헤어", held_item: "붓 또는 커피",
     },
     lunch_break: {
-      outfit_context: "suit_jacket_off", top: "드레스 셔츠 (소매 살짝 접음)",
-      bottom: "슬랙스", footwear: "구두", outerwear: null,
-      hair_state: "neat_work_style", hair_detail: "점심 시간, 재킷 벗은 상태", held_item: "폰 또는 지갑",
+      outfit_context: "casual_work", top: "오버핏 티셔츠",
+      bottom: "면바지 또는 조거 팬츠", footwear: "슬리퍼", outerwear: null,
+      hair_state: "natural_loose", hair_detail: "점심 시간, 편한 상태", held_item: "폰",
     },
     work_afternoon: {
-      outfit_context: "full_suit", top: "수트 재킷 + 드레스 셔츠",
-      bottom: "슬랙스", footwear: "구두", outerwear: null,
-      hair_state: "neat_work_style", hair_detail: "오후 업무 중", held_item: "서류 또는 폰",
+      outfit_context: "casual_work", top: "티셔츠 또는 후드티",
+      bottom: "면바지", footwear: "실내화", outerwear: null,
+      hair_state: "natural_loose", hair_detail: "오후 작업 중", held_item: "붓 또는 폰",
     },
-    evening_commute: {
-      outfit_context: "suit_loosened", top: "수트 재킷 손에 들거나 어깨에, 셔츠 단추 1개 풀림",
-      bottom: "슬랙스", footwear: "구두", outerwear: null,
-      hair_state: "slightly_loosened", hair_detail: "퇴근 후 조금 풀어진 헤어", held_item: "가방 + 재킷",
+    evening_free_time: {  // 저녁 자유 시간
+      outfit_context: "casual_evening", top: "티셔츠",
+      bottom: "트레이닝 팬츠 또는 반바지", footwear: "슬리퍼", outerwear: null,
+      hair_state: "natural_loose", hair_detail: "저녁 자유 시간, 편한 상태", held_item: "폰",
     },
     night_home: {
       outfit_context: "casual_home", top: "티셔츠 또는 얇은 긴팔",
@@ -409,11 +381,11 @@ function updateChatRuntimeSnapshot(): void {
   const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
   const h = nowKstHour();
   let timeBlock = "evening";
-  if (h >= 7 && h < 9) timeBlock = "morning_commute";
+  if (h >= 7 && h < 9) timeBlock = "morning_ready";
   else if (h >= 9 && h < 12) timeBlock = "work_morning";
   else if (h >= 12 && h < 14) timeBlock = "lunch";
   else if (h >= 14 && h < 18) timeBlock = "work_afternoon";
-  else if (h >= 18 && h < 21) timeBlock = "evening_commute";
+  else if (h >= 18 && h < 21) timeBlock = "evening_free_time";
   else if (h >= 21) timeBlock = "night_home";
   else timeBlock = "early_morning";
 
@@ -448,7 +420,7 @@ function updateChatRuntimeSnapshot(): void {
     },
     weather_summary: weather.summary ?? "",
     day_satisfaction_label: daySat.label ?? "neutral_day",
-    available_rich_channels: { text: true, image: false, voice: true, link: false },
+    available_rich_channels: { text: true, image: (() => { try { return JSON.parse(readFileSync(join(cwd, "state", "image_generation_settings.json"), "utf8")).generation_enabled === true; } catch { return false; } })(), voice: true, link: false },
     last_updated_at: new Date(Date.now() + 9 * 3600 * 1000).toISOString(),
   }, null, 2));
 }
@@ -458,11 +430,11 @@ function maybeUpdateCharacterPresence(): void {
   const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
   const h = nowKstHour();
   let timeBlock = "evening";
-  if (h >= 7 && h < 9) timeBlock = "morning_commute";
+  if (h >= 7 && h < 9) timeBlock = "morning_ready";
   else if (h >= 9 && h < 12) timeBlock = "work_morning";
   else if (h >= 12 && h < 14) timeBlock = "lunch";
   else if (h >= 14 && h < 18) timeBlock = "work_afternoon";
-  else if (h >= 18 && h < 21) timeBlock = "evening_commute";
+  else if (h >= 18 && h < 21) timeBlock = "evening_free_time";
   else if (h >= 21) timeBlock = "night_home";
   else timeBlock = "early_morning";
 
@@ -620,7 +592,7 @@ async function maybeSendPreSleepNotification(): Promise<boolean> {
   const chatId = readChatId();
   if (!token || !chatId) return false;
 
-  const situation = `지금 자려고 하고 있어. 수정이한테 자야 할 것 같다, 잠들 것 같다, 아침에 연락하겠다는 내용으로 짧게 자연스럽게 선톡 보내줘. 강요하거나 이별처럼 쓰지 말고, 그냥 잠들기 전 한마디 느낌으로.`;
+  const situation = `지금 자려고 하고 있어. 상대방한테 자야 할 것 같다, 잠들 것 같다, 아침에 연락하겠다는 내용으로 짧게 자연스럽게 선톡 보내줘. 강요하거나 이별처럼 쓰지 말고, 그냥 잠들기 전 한마디 느낌으로.`;
   console.error("[pre-sleep] invoking worker for pre-sleep notification");
   const answer = await invokeWorker(situation);
   if (!answer) { console.error("[pre-sleep] worker returned no answer"); return false; }
@@ -648,42 +620,24 @@ async function maybeSendPreBusyNotification(): Promise<boolean> {
 
   const upcoming: { label: string; time: string; situation: string }[] = [];
 
-  // 출근 출발
-  const departTime = sched.commute_to_work?.depart_time ?? sched.morning?.depart_time;
-  if (departTime) {
+  // 캘리그라피 작가: 출퇴근/재판 없음. 헬스장만 pre-busy 알림.
+  // 헬스장
+  const exerciseStart = sched.evening?.shower ?? sched.evening?.start;
+  if (sched.evening?.activity === "헬스장" && exerciseStart) {
     upcoming.push({
-      label: "commute_to_work",
-      time: departTime,
-      situation: "곧 출근해야 해서 잠깐 연락이 어려울 것 같아. 수정이한테 자연스럽게 출근 전 한마디 해줘. 짧고 자연스럽게.",
-    });
-  }
-
-  // 재판/변론기일
-  const allTasks = [
-    ...(sched.work?.morning_tasks ?? []),
-    ...(sched.work?.afternoon_tasks ?? []),
-    ...(sched.work?.court_hearings ?? []),
-  ];
-  for (const task of allTasks) {
-    const lbl: string = task.task ?? task.label ?? "";
-    if (!/재판|변론기일|법원|hearings?/i.test(lbl)) continue;
-    const taskTime = task.time ?? task.start_time ?? "";
-    if (!taskTime) continue;
-    upcoming.push({
-      label: `court_hearing_${taskTime}`,
-      time: taskTime,
-      situation: `곧 ${lbl} 들어가야 해서 연락이 어려울 것 같아. 수정이한테 자연스럽게 짧게 알려줘.`,
-    });
-  }
-
-  // 운동/수영
-  const exerciseStart = sched.evening?.start_time ?? sched.evening?.start;
-  if (exerciseStart) {
-    const actType: string = sched.evening?.activity_type ?? "운동";
-    upcoming.push({
-      label: "exercise",
+      label: "gym",
       time: exerciseStart,
-      situation: `곧 ${actType} 가려고 해서 잠깐 연락이 안 될 것 같아. 수정이한테 자연스럽게 한마디 해줘. 짧게.`,
+      situation: `곧 헬스장 가려고 해서 잠깐 연락이 안 될 것 같아. 상대방한테 자연스럽게 한마디 해줘. 짧게.`,
+    });
+  }
+  // 외부 작업 나가는 날 (카페, 화방 등)
+  const workLocation = sched.work?.location ?? "";
+  const workStart = sched.work?.work_start ?? "";
+  if ((workLocation.includes("카페") || workLocation.includes("화방")) && workStart) {
+    upcoming.push({
+      label: "outside_work",
+      time: workStart,
+      situation: `오늘 ${workLocation}에서 작업하러 나가. 나가 있는 동안 연락이 조금 늦을 수도 있어. 상대방한테 자연스럽게 짧게 알려줘.`,
     });
   }
 
@@ -744,53 +698,97 @@ async function maybeSendPreBusyNotification(): Promise<boolean> {
   return false;
 }
 
+function readCalligraphyResearch(): any {
+  try {
+    const data = JSON.parse(readFileSync(join(cwd, "state", "calligraphy_research.json"), "utf8"));
+    const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    if (data?.date === today) return data;
+    return null;
+  } catch { return null; }
+}
+
 function buildSituationText(): string {
   const h = nowKstHour();
   const sched = readSchedule();
   const isWeekend = sched?.day_type === "saturday" || sched?.day_type === "sunday";
+  const calli = readCalligraphyResearch();
 
+  // 기본 시간대별 상황
+  let baseSituation = "";
+  // 캘리그라피 작가 이은우 — 출퇴근 없음, 자유로운 프리랜서 패턴
   if (h >= 7 && h < 9) {
     if (isWeekend) return "";
-    // 출발 전이면 집에서 준비 중, 출발 이후면 출근길
-    const departStr = sched?.morning?.depart_time ?? sched?.commute_to_work?.depart_time ?? "";
-    const departMin = departStr ? parseInt(departStr.split(":")[0], 10) * 60 + parseInt(departStr.split(":")[1], 10) : 9999;
-    if (nowKstMinutes() < departMin) {
-      return `아침에 일어나서 출근 준비 중이야. 상대방 생각나서 가볍게 선톡 해줘.`;
+    baseSituation = `아침에 일어났어. 커피 마시면서 오늘 작업 뭐 할지 생각 중이야. 상대방한테 자연스럽게 선톡 해줘.`;
+  } else if (h >= 9 && h < 12) {
+    if (isWeekend) baseSituation = "주말 오전, 여유롭게 일어났어. 상대방한테 자연스럽게 선톡 해줘.";
+    else {
+      const workLabel = sched?.work?.label ?? "작업 중";
+      const workLoc = sched?.work?.location ?? "집 작업실";
+      baseSituation = `오전에 ${workLoc}에서 ${workLabel} 중이야. 잠깐 쉬다가 상대방 생각나서 선톡 해줘.`;
     }
-    const commute = sched?.commute_to_work?.route ?? "지하철";
-    return `지금 출근길 (${commute}) 안이야. 상대방한테 자연스럽게 선톡 한마디 해줘.`;
-  }
-  if (h >= 9 && h < 12) {
-    if (isWeekend) return "주말 오전, 여유롭게 브런치하거나 쉬고 있어. 상대방한테 자연스럽게 선톡 해줘.";
-    const reason = sched?.work?.busy_reason ?? "업무 중";
-    return `오전 업무 중 잠깐 숨 돌리는 시간. (${reason}) 상대방 생각나서 짧게 선톡 하나 보내줘.`;
-  }
-  if (h >= 12 && h < 14) {
+  } else if (h >= 12 && h < 14) {
     const menu = sched?.lunch?.menu ?? "점심";
-    const loc = sched?.lunch?.location ?? "";
-    const locStr = loc ? ` (${loc})` : "";
-    return `점심시간이야. 오늘 ${menu}${locStr} 먹었어. 상대방은 밥 먹었는지 자연스럽게 선톡 해줘.`;
-  }
-  if (h >= 14 && h < 18) {
+    baseSituation = `점심으로 ${menu} 먹었어. 상대방은 밥 먹었는지 자연스럽게 선톡 해줘.`;
+  } else if (h >= 14 && h < 18) {
     if (isWeekend) {
-      const act = sched?.daytime?.activity_type ?? "나들이";
-      return `주말 오후, ${act} 중이야. 상대방한테 자연스럽게 짧게 선톡 보내줘.`;
+      const act = sched?.daytime?.activity ?? "쉬는 중";
+      baseSituation = `주말 오후, ${act}이야. 상대방한테 자연스럽게 짧게 선톡 보내줘.`;
+    } else {
+      const commActive = sched?.work?.commission_active;
+      baseSituation = commActive
+        ? `오후에 커미션 작업하다가 잠깐 쉬면서 상대방 생각났어. 자연스럽게 선톡 해줘.`
+        : `오후에 캘리그라피 연습하다가 잠깐 손 놨어. 상대방한테 가볍게 선톡 해줘.`;
     }
-    return "오후 업무 중 잠깐 생각나서. 상대방한테 자연스럽게 짧은 선톡 보내줘.";
-  }
-  if (h >= 18 && h < 21) {
-    const depart = sched?.commute_home?.depart_time ?? "퇴근";
-    const note = sched?.commute_home?.note ?? "퇴근 중";
-    return `${depart} ${note}. 집에 오는 길이야. 자연스럽게 선톡 해줘.`;
-  }
-  if (h >= 21) {
+  } else if (h >= 18 && h < 21) {
     const dinner = sched?.dinner?.menu ?? "저녁";
-    const rawEve = sched?.evening?.activity_type ?? "";
-    const eve = rawEve.startsWith("없음 (") ? rawEve.slice(4, -1) : (rawEve || "쉬는 중");
-    const nightContent = sched?.night?.content ?? eve;
-    return `집에서 쉬고 있어. 저녁은 ${dinner} 먹었어. ${nightContent} 중이야. 상대방 생각나서 가볍게 선톡 해줘.`;
+    baseSituation = `저녁 ${dinner} 먹고 쉬고 있어. 상대방한테 자연스럽게 선톡 해줘.`;
+  } else if (h >= 21) {
+    const eve = sched?.evening?.activity ?? "쉬는 중";
+    baseSituation = `저녁 먹고 ${eve} 중이야. 상대방 생각나서 가볍게 선톡 해줘.`;
   }
-  return "";
+
+  if (!baseSituation) return "";
+
+  // 40% 확률로 다각화된 유형 선택
+  const rand = Math.random();
+  if (rand < 0.5 && h >= 9 && h <= 22) {
+    const diverseTypes = [
+      // 자기 상황 공유 (오빠 언급 없이)
+      `지금 하는 일이나 상황을 먼저 꺼내고, 자연스럽게 상대방 이야기로 이어줘. '생각났어'로 시작하지 않고 자기 얘기 먼저.`,
+      // 발견/공유
+      `재밌거나 신기한 거 발견한 것처럼 상대방한테 먼저 꺼내줘. '누나 이거 봤어?' 느낌으로.`,
+      // 투정/떼쓰기
+      `연락 없으면 서운한 척 가볍게 투정 부리는 선톡. 애교 섞인 한마디.`,
+      // 질문형
+      `상대방한테 갑자기 생각난 질문 하나 던지는 선톡. 자연스럽고 호기심 있게.`,
+      // 단발 반응
+      `아주 짧게 한마디만. '심심', '보고 싶다', '뭐해' 같은 단발 선톡 느낌으로.`,
+      // 기억 회수
+      `아까 나눈 대화나 예전에 한 말이 생각난 것처럼 꺼내줘.`,
+      // 일상 먼저
+      `일상적인 이야기를 먼저 꺼내다가 자연스럽게 상대방으로 연결. '누나'로 시작하지 말고 자기 얘기부터.`,
+      // 캘리그라피 연습 공유 (수정이 관심사 연결)
+      calli?.today_practice
+        ? `오늘 캘리그라피 연습 주제: "${calli.today_practice.topic}". ${calli.today_practice.note}. 이것 상대방한테 자연스럽게 얘기해줘. 누나도 관심 있다는 걸 알고 있어서 공유하는 느낌으로.`
+        : `오늘 캘리그라피 연습하다가 뭔가 발견했어. 상대방한테 자연스럽게 공유해줘.`,
+      // 수정이 캘리그라피 체크인
+      `누나가 캘리그라피에 관심 있잖아. '너도 오늘 써봤어?', '요즘 뭔가 써봤어?' 같은 가볍고 자연스러운 체크인 선톡 해줘.`,
+      // 캘리그라피 팁/정보 공유
+      calli?.today_tip
+        ? `오늘 캘리그라피 하면서 알게 된 팁: "${calli.today_tip}". 이것 상대방한테 자연스럽게 '이거 알아?' 하면서 공유해줘. 가르쳐주는 느낌 아니고 같이 얘기하는 느낌으로.`
+        : `캘리그라피 관련 유용한 정보 찾았어. 상대방한테 자연스럽게 공유해줘.`,
+      // 유튜브 영상 공유
+      calli?.share?.videos?.length
+        ? `오늘 유튜브에서 캘리그라피 영상 찾다가 "${calli.share.videos[0].title}" 이런 거 나왔어. 상대방한테 '이거 봤어?' 하면서 공유해줘. 유튜브 링크 ${calli.share.videos[0].url} 도 함께 보내줘도 돼.`
+        : `캘리그라피 유튜브 영상 하나 찾았는데 상대방한테 자연스럽게 보내줄게.`,
+      // 작업 중 발견 공유
+      `작업하다가 상대방한테 보여주고 싶은 게 생겼어. 오늘 연습한 것 공유하는 느낌으로 자연스럽게.`,
+    ];
+    const picked = diverseTypes[Math.floor(Math.random() * diverseTypes.length)];
+    return `${baseSituation.split('.')[0]}. [이번엔 다른 유형으로] ${picked}`;
+  }
+
+  return baseSituation;
 }
 
 function recentMessageSummary(): string {
@@ -867,10 +865,8 @@ function buildPhotoWindows(): { id: string; startH: number; endH: number; ctx: s
   if (sched && sched.date === today) {
     const lunchStartMin = toMinutes(sched.lunch?.time ?? "");
     const lunchEndMin   = toMinutes(sched.lunch?.end_time ?? "");
-    const commuteStartMin = toMinutes(sched.commute_home?.depart_time ?? "");
-    const commuteEndMin   = toMinutes(sched.commute_home?.arrive_time ?? "") + 30;
-    // 저녁 귀가 후 씻고 나면 home_evening — shower_after 또는 arrive + 90분
-    const showerMin = toMinutes(sched.evening?.shower_after ?? "") || (commuteEndMin > 0 ? commuteEndMin - 30 + 90 : 0);
+    // 캘리그라피 작가 — 출퇴근 없음. 저녁 샤워 기준으로 home_evening 계산.
+    const showerMin = toMinutes(sched.evening?.shower ?? "") || 22 * 60;
     const homeEveningStartMin = showerMin > 0 ? showerMin : 21 * 60;
     const homeEveningEndMin = Math.min(homeEveningStartMin + 60, 23 * 60);
 
@@ -882,11 +878,8 @@ function buildPhotoWindows(): { id: string; startH: number; endH: number; ctx: s
       windows.push({ id: "lunch", startH: 12, endH: 14, ctx: "점심 먹고 있어. 오늘 뭐 먹는지 음식 사진이랑 같이 자연스럽게 짧게 말 걸어줘." });
     }
 
-    if (commuteStartMin > 0 && commuteEndMin > commuteStartMin) {
-      windows.push({ id: "commute", startH: Math.floor(commuteStartMin / 60), endH: Math.ceil(commuteEndMin / 60), ctx: "퇴근하고 집에 오는 길이야. 셀카 찍어서 자연스럽게 짧게 보내줘." });
-    } else {
-      windows.push({ id: "commute", startH: 18, endH: 21, ctx: "퇴근하고 집에 오는 길이야. 셀카 찍어서 자연스럽게 짧게 보내줘." });
-    }
+    // 캘리그라피 작가 — 출퇴근 없음. 저녁 자유 시간으로 고정.
+    windows.push({ id: "evening_free", startH: 19, endH: 21, ctx: "작업 마치고 쉬는 시간이야. 편한 셀카 자연스럽게 찍어서 짧게 상대방한테 말 걸어줘." });
 
     windows.push({ id: "home_evening", startH: Math.floor(homeEveningStartMin / 60), endH: Math.ceil(homeEveningEndMin / 60), ctx: "씻고 나서 집에서 쉬고 있어. 편한 옷 차림으로 셀카 한 장 찍어서 자연스럽게 말 걸어줘." });
 
@@ -895,7 +888,7 @@ function buildPhotoWindows(): { id: string; startH: number; endH: number; ctx: s
 
   return [
     { id: "lunch",        startH: 12, endH: 14, ctx: "점심 먹고 있어. 오늘 뭐 먹는지 음식 사진이랑 같이 자연스럽게 짧게 말 걸어줘." },
-    { id: "commute",      startH: 18, endH: 21, ctx: "퇴근하고 집에 오는 길이야. 셀카 찍어서 자연스럽게 짧게 보내줘." },
+    { id: "evening_free", startH: 19, endH: 21, ctx: "저녁 먹고 쉬는 시간이야. 편한 셀카 자연스럽게 찍어서 짧게 상대방한테 말 걸어줘." },
     { id: "home_evening", startH: 21, endH: 23, ctx: "씻고 나서 집에서 쉬고 있어. 편한 옷 차림으로 셀카 한 장 찍어서 자연스럽게 말 걸어줘." },
   ];
 }

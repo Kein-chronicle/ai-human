@@ -11,7 +11,55 @@
             "food": [],
             "music": [],
             "content_ott": [],
-            "fashion_style": []
+            "fashion_style": [],
+            "outfit": [
+                {
+                    "value": "집에서 연핑크 톤의 편한 원피스를 입는 모습",
+                    "observed_at": "2026-06-07T14:34:43Z",
+                    "source": "photo"
+                }
+            ],
+            "location_habit": [
+                {
+                    "value": "놀이터 같은 야외 공간에서 아이들과 시간을 보내는 편",
+                    "observed_at": "2026-06-07T05:36:00.000Z",
+                    "source": "photo"
+                },
+                {
+                    "value": "집에서 강아지들이랑 거울셀카를 찍으며 쉬는 편",
+                    "observed_at": "2026-06-07T14:34:43Z",
+                    "source": "photo"
+                }
+            ],
+            "hobby": [
+                {
+                    "value": "캘리그라피와 손글씨 문구 작업을 꾸준히 함",
+                    "observed_at": "2026-06-02T08:17:00.000Z",
+                    "source": "photo"
+                },
+                {
+                    "value": "문구 카드에 캘리그라피 문장을 직접 써서 작업함",
+                    "observed_at": "2026-06-02T08:17:00.000Z",
+                    "source": "photo"
+                },
+                {
+                    "value": "손그림을 곁들인 캘리그라피 메모장 작업도 한다",
+                    "observed_at": "2026-06-15T09:26:55Z",
+                    "source": "photo"
+                },
+                {
+                    "value": "스프링 메모장에 손글씨 문구를 정성스럽게 작업한다",
+                    "observed_at": "2026-06-18T00:41:21Z",
+                    "source": "photo"
+                }
+            ],
+            "appearance": [
+                {
+                    "value": "안경 쓴 편한 민낯 느낌이 잘 어울림",
+                    "observed_at": "2026-06-07T14:34:43Z",
+                    "source": "photo"
+                }
+            ]
         },
         "habits_and_routines": {},
         "current_concerns_or_goals": [],

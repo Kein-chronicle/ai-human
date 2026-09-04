@@ -35,6 +35,23 @@ def clean_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def insert_breathing_pauses(text: str) -> str:
+    """문장 끝과 호명 뒤에 자연스러운 호흡 pause 삽입."""
+    text = text.replace("\n", ". ")
+    # 문장 끝 (마침표·물음표·느낌표) 뒤에 pause
+    text = re.sub(r"([.?!])\s+", r"\1<break time=\"550ms\"/> ", text)
+    # 이름/호명 뒤
+    text = re.sub(r"(수정아|[가-힣]{1,3}아|[가-힣]{1,3}야)\s+", r"\1<break time=\"380ms\"/> ", text)
+    # 쉼표 뒤
+    text = re.sub(r",\s+", r",<break time=\"300ms\"/> ", text)
+    # 연결어미 뒤 (다가, 하고, 해서, 하면서, 하다가 등) — 중간 숨
+    text = re.sub(r"(다가|하고|해서|하면서|하다가|하다보니|하고는|했는데|했고)\s+", r"\1<break time=\"280ms\"/> ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    if text and text[-1] not in ".?!":
+        text += "."
+    return text
+
+
 def synthesize(text: str, output_path: Path, env: dict) -> None:
     api_key = env.get("ELEVENLABS_API_KEY")
     voice_id = env.get("ELEVENLABS_VOICE_ID")
@@ -42,14 +59,15 @@ def synthesize(text: str, output_path: Path, env: dict) -> None:
         raise RuntimeError("missing ELEVENLABS_API_KEY or ELEVENLABS_VOICE_ID")
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128"
     payload = {
-        "text": clean_text(text),
-        "model_id": "eleven_multilingual_v2",
+        "text": insert_breathing_pauses(clean_text(text)),
+        "model_id": env.get("ELEVENLABS_MODEL_ID", "eleven_multilingual_v2"),
         "language_code": "ko",
         "voice_settings": {
             "stability": float(env.get("ELEVENLABS_STABILITY", "0.45")),
             "similarity_boost": float(env.get("ELEVENLABS_SIMILARITY_BOOST", "0.80")),
             "style": float(env.get("ELEVENLABS_STYLE", "0.20")),
             "use_speaker_boost": env.get("ELEVENLABS_USE_SPEAKER_BOOST", "true").lower() == "true",
+            "speed": float(env.get("ELEVENLABS_SPEED", "1.0")),
         },
     }
     req = urllib.request.Request(

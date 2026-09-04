@@ -1,0 +1,46 @@
+{
+  "date": "2026-09-04",
+  "generated_at": "2026-09-04T09:10:06+09:00",
+  "share": {
+    "query": "카드 편지 손글씨 캘리그라피",
+    "category": "캘리그라피",
+    "videos": [
+      {
+        "title": "[캘리그라피] 손글씨로 카드(엽서)제작",
+        "url": "https://www.youtube.com/watch?v=rxcf-V1oykE",
+        "channel": "전캘리",
+        "duration": "48"
+      },
+      {
+        "title": "[캘리그라피 카드] 새해카드 만들고 손편지쓰기 (손글씨, 편지, 카드, 캘리그라피, DIY, 다꾸)",
+        "url": "https://www.youtube.com/watch?v=IQ8jGCbKoQc",
+        "channel": "마리엘",
+        "duration": "4:18"
+      }
+    ],
+    "summary": "오늘 찾아본 캘리그라피 영상: '카드 편지 손글씨 캘리그라피' 관련"
+  },
+  "solo_study": {
+    "query": "캘리그라피 잉크 종류 추천",
+    "videos": [
+      {
+        "title": "The Ultimate Calligraphy Brush Pen Guide! All My Recommendations and What to Avoid",
+        "url": "https://www.youtube.com/watch?v=dd9hAR6p-OU",
+        "channel": "청연캘리",
+        "duration": "4:34"
+      },
+      {
+        "title": "국산브랜드 캘리그라피 펜 추천 - 제노 붓펜 , 이니글씨 캘리그라피 꿀팁",
+        "url": "https://www.youtube.com/watch?v=ODJxAYUAT9w",
+        "channel": "이니글씨yini_calli",
+        "duration": "10:44"
+      }
+    ]
+  },
+  "today_practice": {
+    "topic": "압력 조절",
+    "note": "붓 압력 세기에 따른 굵기 변화 컨트롤"
+  },
+  "today_tip": "문구점 가면 일본 붓펜이 다양한데 그것도 한번 써보면 재밌어.",
+  "share_ready": true
+}

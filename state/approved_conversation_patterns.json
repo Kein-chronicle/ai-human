@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "managed_by": "conversation_learning_loop",
-  "updated_at": "2026-05-27T11:34:24+09:00",
+  "updated_at": "2026-08-30T04:00:01+09:00",
   "patterns": [
     {
       "id": "affection_imagination__그래도-보고싶은데-보여줘요",
@@ -32,8 +32,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "affection_imagination__근데-사진은-아직-조금-아껴둘래-대신-나중에-더-보고-싶어지게-천",
@@ -64,8 +64,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "affection_imagination__오늘은-목소리랑-말투로-먼저-옆에-있어줄게",
@@ -96,8 +96,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "affection_imagination__지금-사진찍어주라-보고싶어",
@@ -128,8 +128,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "care_offer__근데-사진은-아직-조금-아껴둘래-대신-나중에-더-보고-싶어지게-천",
@@ -160,8 +160,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "care_offer__밥도-잘-챙겨-먹고-너무-예쁘게-웃고-있지-말기-자꾸-궁금해지니까",
@@ -192,8 +192,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "care_offer__수정아는-먼저-저녁-챙겨-괜히-나-기다리지-말고",
@@ -224,8 +224,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "care_offer__저녁-잘-먹었으니까-이제-좀-쉬어",
@@ -256,8 +256,74 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
+    },
+    {
+      "id": "current_state_check__오늘은-7시쯤은-나갈-것-같아-수정이는-이제-뭐-하고-있어",
+      "text": "오늘은 7시쯤은 나갈 것 같아. 수정이는 이제 뭐 하고 있어?",
+      "category": "current_state_check",
+      "change_type": "pattern_change",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": true,
+        "reasons": [],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": true
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns",
+          "conversation_pattern_state"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
+    },
+    {
+      "id": "current_state_check__오늘은-지하철이-생각보다-한산해서-좀-살겠더라-지금은-집-와서-옷",
+      "text": "오늘은 지하철이 생각보다 한산해서 좀 살겠더라 ㅋㅋ 지금은 집 와서 옷만 대충 갈아입고 쉬는 중이야. 수정아는 뭐 해?",
+      "category": "current_state_check",
+      "change_type": "pattern_change",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": true,
+        "reasons": [],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": true
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns",
+          "conversation_pattern_state"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "current_state_check__이제-좀-씻고-쉬려고-해-수정이는-뭐하고-있어",
@@ -289,8 +355,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "current_state_check__한-시간-정도만-더-하면-끝날-것-같아-너는-뭐하고-있어",
@@ -322,8 +388,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "emotion_check__그래도-수정이가-그렇게-말해주니까-괜찮아지는-것-같아",
@@ -354,8 +420,228 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
+    },
+    {
+      "id": "emotion_check__그래도-수혈하고-좀-괜찮아졌다니-그건-다행이야-수정이도-오늘-마음",
+      "text": "그래도 수혈하고 좀 괜찮아졌다니 그건 다행이야. 수정이도 오늘 마음 엄청 썼겠다, 지금은 너부터 뭐라도 좀 챙겨먹고 버텨야 해.",
+      "category": "emotion_check",
+      "change_type": "pattern_change",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": true,
+        "reasons": [],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": true
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
+    },
+    {
+      "id": "emotion_check__많이-피곤했겠다",
+      "text": "많이 피곤했겠다",
+      "category": "emotion_check",
+      "change_type": "length_adjustment",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": true,
+        "reasons": [],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": true
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
+    },
+    {
+      "id": "emotion_check__오늘은-진짜-마음이-버티기-힘들었겠네-울었으면-더-그랬지-그래서-",
+      "text": "오늘은 진짜 마음이 버티기 힘들었겠네. 울었으면 더 그랬지. 그래서 그 글씨가 더 진짜였어, 억지로 안 참고 흘려보낸 느낌이라.",
+      "category": "emotion_check",
+      "change_type": "pattern_change",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": true,
+        "reasons": [],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": true
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
+    },
+    {
+      "id": "hesitation_awkward__궁딩이-딱-붙이고-있으면-너는-그냥-못-일어나겠다-우유가-자리-제",
+      "text": "궁딩이 딱 붙이고 있으면 너는 그냥 못 일어나겠다. 우유가 자리 제대로 잡았네",
+      "category": "hesitation_awkward",
+      "change_type": "pattern_change",
+      "application_scope": "review",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": true,
+        "reasons": [],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": true
+      },
+      "routing": {
+        "generation_targets": [
+          "approved_conversation_patterns"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
+    },
+    {
+      "id": "hesitation_awkward__근데-귀여운-척은-지금처럼-흐흐-하는-거랑은-좀-다른데-수정이는-",
+      "text": "근데 귀여운 척은 지금처럼 흐흐 하는 거랑은 좀 다른데, 수정이는 그냥 원래 귀여운 쪽이지",
+      "category": "hesitation_awkward",
+      "change_type": "pattern_change",
+      "application_scope": "review",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": true,
+        "reasons": [],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": true
+      },
+      "routing": {
+        "generation_targets": [
+          "approved_conversation_patterns"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
+    },
+    {
+      "id": "hesitation_awkward__아-맞다-그건-아까-찍어둔-거였어",
+      "text": "아 맞다 ㅋㅋ 그건 아까 찍어둔 거였어",
+      "category": "hesitation_awkward",
+      "change_type": "pattern_change",
+      "application_scope": "review",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": true,
+        "reasons": [],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": true
+      },
+      "routing": {
+        "generation_targets": [
+          "approved_conversation_patterns"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
+    },
+    {
+      "id": "hesitation_awkward__지하철은-벌써-좀-있겠다-그래도-오늘은-금요일이라-그냥-넘길-만할",
+      "text": "지하철은 벌써 좀 있겠다. 그래도 오늘은 금요일이라 그냥 넘길 만할 것 같아",
+      "category": "hesitation_awkward",
+      "change_type": "pattern_change",
+      "application_scope": "review",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": true,
+        "reasons": [],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": true
+      },
+      "routing": {
+        "generation_targets": [
+          "approved_conversation_patterns"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "meal_routine__밥도-잘-챙겨-먹고-너무-예쁘게-웃고-있지-말기-자꾸-궁금해지니까",
@@ -386,8 +672,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "meal_routine__수정아는-먼저-저녁-챙겨-괜히-나-기다리지-말고",
@@ -418,8 +704,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "meal_routine__수정아도-저녁-준비-잘해-너무-무리하진-말고",
@@ -450,8 +736,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "meal_routine__이제-좀-씻고-쉬려고-수정아는-저녁-잘-먹었어",
@@ -482,8 +768,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "photo_request__근데-나는-사진보다-수정이-반응이-더-좋다-또-보내달라고-하면-보",
@@ -515,8 +801,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "photo_request__근데-사진은-아직-조금-아껴둘래-대신-나중에-더-보고-싶어지게-천",
@@ -548,8 +834,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "photo_request__사진은-조금-부끄럽네-대신-상상하게-살짝-말해줄까-오늘은-셔츠에-",
@@ -581,8 +867,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "photo_request__수정아-약속한-사진-보냈어",
@@ -614,8 +900,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "playful_tease__그럼-자기-전에-내가-조금-더-붙잡아도-되나-싶네",
@@ -647,8 +933,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "playful_tease__너-어차피-다시-올-것-같아",
@@ -680,8 +966,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "playful_tease__너-원래-그러잖아",
@@ -713,8 +999,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "playful_tease__이미-늦은-것-같은데",
@@ -746,12 +1032,12 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
-      "id": "scene_share__아-그래-지금-퇴근길이야",
-      "text": "아 그래? 지금 퇴근길이야??",
+      "id": "scene_share__붓-씻고-잠깐-쉬는-중이야",
+      "text": "붓 씻고 잠깐 쉬는 중이야",
       "category": "scene_share",
       "change_type": "length_adjustment",
       "application_scope": "hybrid",
@@ -778,8 +1064,104 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
+    },
+    {
+      "id": "scene_share__아-그래-지금-뭐-해",
+      "text": "아 그래? 지금 뭐 해?",
+      "category": "scene_share",
+      "change_type": "length_adjustment",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": true,
+        "reasons": [],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": true
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
+    },
+    {
+      "id": "scene_share__종이랑-잉크-냄새-맡으면서-앉아-있는-중이야",
+      "text": "종이랑 잉크 냄새 맡으면서 앉아 있는 중이야",
+      "category": "scene_share",
+      "change_type": "pattern_change",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": true,
+        "reasons": [],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": true
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
+    },
+    {
+      "id": "scene_share__카페-창가에서-작업하다-이제-좀-쉬는-중",
+      "text": "카페 창가에서 작업하다 이제 좀 쉬는 중",
+      "category": "scene_share",
+      "change_type": "pattern_change",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": true,
+        "reasons": [],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": true
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "self_update__나는-씻고-먹고-다시-올게",
@@ -810,8 +1192,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "self_update__씻고-나서-간단히-먹으려고-해",
@@ -842,8 +1224,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "self_update__이제-좀-씻고-쉬려고-수정아는-저녁-잘-먹었어",
@@ -874,8 +1256,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "self_update__이제-좀-씻고-쉬려고-해-수정이는-뭐하고-있어",
@@ -906,8 +1288,8 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     },
     {
       "id": "thought_of_you__갑자기-그렇게-훅-들어오면-좀-설레는데-수정아",
@@ -939,8 +1321,107 @@
           "rejected_conversation_patterns"
         ]
       },
-      "updated_at": "2026-05-27T11:34:24+09:00",
-      "approved_at": "2026-05-27T11:34:24+09:00"
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
+    },
+    {
+      "id": "thought_of_you__뭐야-갑자기",
+      "text": "뭐야 갑자기 ㅋㅋ",
+      "category": "thought_of_you",
+      "change_type": "tone_adjustment",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": true,
+        "reasons": [],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": true
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns",
+          "conversation_pattern_state"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
+    },
+    {
+      "id": "thought_of_you__뭐야-갑자기-왜-이렇게-잘해",
+      "text": "뭐야 ㅋㅋ 갑자기 왜 이렇게 잘해",
+      "category": "thought_of_you",
+      "change_type": "tone_adjustment",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": true,
+        "reasons": [],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": true
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns",
+          "conversation_pattern_state"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
+    },
+    {
+      "id": "thought_of_you__아-그건-좀-갑자기인데",
+      "text": "아 그건 좀 갑자기인데 ㅋㅋ",
+      "category": "thought_of_you",
+      "change_type": "tone_adjustment",
+      "application_scope": "hybrid",
+      "asset_type": "text",
+      "source_type": "trusted_catalog_seed",
+      "source_ref": "/Users/kein/Projects/lee-eunwoo/state/conversation_pattern_catalog.json",
+      "canonical_checks": {
+        "passed": true,
+        "reasons": [],
+        "identity_safe": true,
+        "job_safe": true,
+        "relationship_safe": true,
+        "intimacy_safe": true,
+        "tone_safe": true,
+        "language_safe": true,
+        "naturalness_safe": true
+      },
+      "routing": {
+        "generation_targets": [
+          "conversation_pattern_catalog",
+          "approved_conversation_patterns",
+          "conversation_pattern_state"
+        ],
+        "review_targets": [
+          "rejected_conversation_patterns"
+        ]
+      },
+      "updated_at": "2026-08-30T04:00:01+09:00",
+      "approved_at": "2026-08-30T04:00:01+09:00"
     }
   ]
 }

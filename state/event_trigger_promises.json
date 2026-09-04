@@ -4,5 +4,5 @@
   "processed_offsets": {},
   "active_promises": [],
   "resolved_promises": [],
-  "notes": "대화 중 약속을 이벤트 트리거로 관리. 점심에 사진 보내기, 퇴근 후 연락 등. Claude가 감지 시 추가."
+  "notes": "대화 중 약속을 이벤트 트리거로 관리. 점심에 사진 보내기, 작업 끝나고 연락 등. Claude가 감지 시 추가."
 }

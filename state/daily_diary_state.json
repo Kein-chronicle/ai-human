@@ -9,5 +9,10 @@
   "last_detected_mood": null,
   "last_weather_summary": null,
   "last_conversation_keywords": [],
-  "notes": "자기 전 일기 생성 상태 추적. enabled=true 시 23:00 이후 자동 생성."
+  "notes": "자기 전 일기 생성 상태 추적. enabled=true 시 23:00 이후 자동 생성.",
+  "today": "2026-09-03",
+  "today_written": false,
+  "today_message_count": 1,
+  "generated_at": "2026-09-03T23:10:01.954320+09:00",
+  "fill_status": "bootstrap_pending"
 }

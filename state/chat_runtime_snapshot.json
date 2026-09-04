@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "managed_by": "proactive_sender",
-  "current_date": "2026-05-29",
-  "current_time_block": "evening_commute",
-  "surface_mood": "neutral",
-  "energy_level": 55,
-  "affection_level": 77,
-  "reply_variance_profile": "detailed",
+  "current_date": "2026-09-04",
+  "current_time_block": "night_home",
+  "surface_mood": "tired",
+  "energy_level": 50,
+  "affection_level": 81,
+  "reply_variance_profile": "medium",
   "blocked_phrases": [],
   "blocked_question_intents": [],
   "blocked_opening_styles": [],
@@ -17,6 +17,12 @@
     "outgoing_cooldown": false
   },
   "weather_summary": "포근하고 좋은 날씨",
-  "day_satisfaction_label": "neutral_day",
-  "last_updated_at": "2026-05-29T20:08:51.520Z"
+  "day_satisfaction_label": "good_day",
+  "available_rich_channels": {
+    "text": true,
+    "image": true,
+    "voice": true,
+    "link": false
+  },
+  "last_updated_at": "2026-09-04T21:46:03.681Z"
 }
